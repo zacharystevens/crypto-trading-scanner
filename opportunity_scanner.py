@@ -25,12 +25,18 @@ logger = logging.getLogger(__name__)
 
 class OpportunityScanner:
     def __init__(self):
-        # Market Coverage - Cast wide net
-        self.TOP_COINS = [
+        # Market Coverage - Dynamic and Static Lists
+        self.STATIC_COINS = [
             'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'XRP/USDT', 'ADA/USDT',
             'SOL/USDT', 'AVAX/USDT', 'DOT/USDT', 'MATIC/USDT', 'LINK/USDT',
             'UNI/USDT', 'LTC/USDT', 'BCH/USDT', 'ATOM/USDT', 'FIL/USDT'
         ]
+        
+        # Dynamic Market Movers Settings
+        self.MIN_VOLUME_USDT = 1000000  # $1M minimum 24h volume
+        self.MIN_PRICE = 0.0001  # Minimum price to avoid micro-cap chaos
+        self.MAX_PRICE = 100000  # Maximum price filter
+        self.EXCLUDED_SYMBOLS = ['USDT', 'BUSD', 'USDC', 'DAI', 'TUSD']  # Stablecoins
         
         # Multi-Timeframe Analysis Settings - Professional Confluence System
         self.TIMEFRAMES = ['15m', '1h', '4h']  # Active analysis timeframes
@@ -64,7 +70,7 @@ class OpportunityScanner:
         self._create_directories()
         
         print("🔍 OPPORTUNITY SCANNER INITIALIZED")
-        print(f"📊 Scanning {len(self.TOP_COINS)} coins")
+        print(f"📊 Static List: {len(self.STATIC_COINS)} coins | Dynamic Market Movers: Available")
         print(f"🎯 Looking for: FVG setups, trendline breaks, patterns, volume spikes")
         print()
     
@@ -715,6 +721,80 @@ class OpportunityScanner:
             logger.error(f"Error fetching multi-timeframe data for {symbol}: {e}")
             return {}
     
+    def fetch_market_movers(self, move_type='gainers', limit=10):
+        """Fetch top market gainers or losers dynamically"""
+        try:
+            logger.info(f"Fetching top {limit} {move_type} from the market...")
+            
+            # Fetch all tickers
+            tickers = self.exchange.fetch_tickers()
+            
+            # Filter USDT pairs with sufficient volume
+            usdt_pairs = []
+            for symbol, ticker in tickers.items():
+                if (symbol.endswith('/USDT') and 
+                    ticker.get('quoteVolume', 0) >= self.MIN_VOLUME_USDT and
+                    ticker.get('last', 0) >= self.MIN_PRICE and 
+                    ticker.get('last', 0) <= self.MAX_PRICE and
+                    ticker.get('percentage') is not None):
+                    
+                    # Exclude stablecoins and problematic pairs
+                    base_symbol = symbol.split('/')[0]
+                    if not any(excluded in base_symbol for excluded in self.EXCLUDED_SYMBOLS):
+                        usdt_pairs.append({
+                            'symbol': symbol,
+                            'price': ticker['last'],
+                            'change_24h': ticker['percentage'],
+                            'volume_24h': ticker['quoteVolume'],
+                            'high_24h': ticker['high'],
+                            'low_24h': ticker['low']
+                        })
+            
+            # Sort by 24h percentage change
+            if move_type == 'gainers':
+                sorted_pairs = sorted(usdt_pairs, key=lambda x: x['change_24h'], reverse=True)
+                logger.info(f"Found {len(sorted_pairs)} qualifying pairs. Top gainer: {sorted_pairs[0]['symbol'] if sorted_pairs else 'None'}")
+            else:  # losers
+                sorted_pairs = sorted(usdt_pairs, key=lambda x: x['change_24h'])
+                logger.info(f"Found {len(sorted_pairs)} qualifying pairs. Top loser: {sorted_pairs[0]['symbol'] if sorted_pairs else 'None'}")
+            
+            # Get top performers
+            top_movers = sorted_pairs[:limit]
+            
+            # Log the results
+            logger.info(f"Top {limit} {move_type}:")
+            for i, mover in enumerate(top_movers, 1):
+                logger.info(f"{i}. {mover['symbol']}: {mover['change_24h']:.2f}% (Vol: ${mover['volume_24h']:,.0f})")
+            
+            return [mover['symbol'] for mover in top_movers]
+            
+        except Exception as e:
+            logger.error(f"Error fetching market movers: {e}")
+            print(f"⚠️  Could not fetch market movers: {e}")
+            print("📋 Falling back to static coin list...")
+            return self.STATIC_COINS[:limit]
+    
+    def get_market_mover_summary(self, symbols):
+        """Get summary of market movers for display"""
+        try:
+            tickers = self.exchange.fetch_tickers()
+            summary = []
+            
+            for symbol in symbols:
+                if symbol in tickers:
+                    ticker = tickers[symbol]
+                    summary.append({
+                        'symbol': symbol,
+                        'price': ticker['last'],
+                        'change_24h': ticker['percentage'],
+                        'volume_24h': ticker['quoteVolume']
+                    })
+            
+            return summary
+        except Exception as e:
+            logger.warning(f"Could not fetch mover summary: {e}")
+            return []
+    
     def analyze_timeframe_confluence(self, symbol, timeframe_data):
         """Analyze confluence across multiple timeframes - Professional Grade"""
         confluence_analysis = {
@@ -1102,16 +1182,45 @@ class OpportunityScanner:
         
         return analysis
     
-    def scan_all_opportunities(self):
-        """Scan all coins and rank opportunities with enhanced features"""
+    def scan_all_opportunities(self, scan_type='static', limit=15):
+        """Scan coins for trading opportunities with dynamic market mover support"""
+        
+        # Determine which coins to scan
+        if scan_type == 'static':
+            coins_to_scan = self.STATIC_COINS
+            scan_description = f"Static Top {len(coins_to_scan)} Coins"
+        elif scan_type == 'gainers':
+            coins_to_scan = self.fetch_market_movers('gainers', limit)
+            scan_description = f"Top {len(coins_to_scan)} Market Gainers (24h)"
+        elif scan_type == 'losers':
+            coins_to_scan = self.fetch_market_movers('losers', limit)
+            scan_description = f"Top {len(coins_to_scan)} Market Losers (24h)"
+        elif scan_type == 'mixed':
+            gainers = self.fetch_market_movers('gainers', limit//2)
+            losers = self.fetch_market_movers('losers', limit//2)
+            coins_to_scan = gainers + losers
+            scan_description = f"Top {len(gainers)} Gainers + {len(losers)} Losers"
+        else:
+            coins_to_scan = self.STATIC_COINS
+            scan_description = "Default Static List"
         print(f"🚀 PROFESSIONAL OPPORTUNITY SCANNER - ENHANCED VERSION")
-        print(f"📊 Scanning {len(self.TOP_COINS)} coins with advanced FVG + Pattern Recognition")
-        print("="*80)
+        print(f"📊 Scanning: {scan_description}")
+        print(f"🎯 Advanced FVG + Pattern Recognition + Multi-Timeframe Confluence")
+        print("=" * 80)
+        
+        # Show market mover summary if dynamic scan
+        if scan_type != 'static':
+            print(f"🔥 {scan_description.upper()}:")
+            summary = self.get_market_mover_summary(coins_to_scan)
+            for i, mover in enumerate(summary[:10], 1):  # Show top 10 in summary
+                change_emoji = "🚀" if mover['change_24h'] > 0 else "📉"
+                print(f"   {i:2d}. {mover['symbol']:12} {change_emoji} {mover['change_24h']:+6.2f}% (Vol: ${mover['volume_24h']:,.0f})")
+            print("=" * 80)
         
         opportunities = []
         failed_count = 0
         
-        for symbol in self.TOP_COINS:
+        for symbol in coins_to_scan:
             try:
                 analysis = self.analyze_single_coin(symbol)
                 if analysis:
@@ -1123,8 +1232,8 @@ class OpportunityScanner:
                 failed_count += 1
         
         # Check if all symbols failed (critical error)
-        if failed_count == len(self.TOP_COINS):
-            print(f"\n🔴 CRITICAL ERROR: All {len(self.TOP_COINS)} symbols failed to fetch data")
+        if failed_count == len(coins_to_scan):
+            print(f"\n🔴 CRITICAL ERROR: All {len(coins_to_scan)} symbols failed to fetch data")
             print("   This indicates a serious connectivity or API issue")
             print("   • Check your internet connection")
             print("   • Verify VPN settings") 
@@ -1133,13 +1242,22 @@ class OpportunityScanner:
             sys.exit(1)
         
         # Warn if most symbols failed
-        failure_rate = failed_count / len(self.TOP_COINS)
+        failure_rate = failed_count / len(coins_to_scan)
         if failure_rate > 0.5:
-            print(f"\n⚠️  WARNING: {failed_count}/{len(self.TOP_COINS)} symbols failed ({failure_rate:.1%})")
+            print(f"\n⚠️  WARNING: {failed_count}/{len(coins_to_scan)} symbols failed ({failure_rate:.1%})")
             print("   Market data may be unreliable. Consider checking connection.")
         
         # Sort by score (highest first)
         opportunities.sort(key=lambda x: x['score'], reverse=True)
+        
+        # Add scan metadata
+        for opp in opportunities:
+            opp['scan_metadata'] = {
+                'scan_type': scan_type,
+                'scan_description': scan_description,
+                'coins_scanned': len(coins_to_scan),
+                'opportunities_found': len(opportunities)
+            }
         
         return opportunities
     
@@ -1245,7 +1363,7 @@ class OpportunityScanner:
             print("    " + "─" * 70)
 
 def main():
-    """Main scanning function"""
+    """Main scanning function with dynamic market mover support"""
     print("🔍 OPPORTUNITY SCANNER - STAGE 1")
     print("="*50)
     print("Finding the best trading opportunities across the market")
@@ -1253,26 +1371,53 @@ def main():
     
     scanner = OpportunityScanner()
     
-    print("Choose scan mode:")
-    print("1. Full market scan")
-    print("2. Quick scan (top 10)")
+    print("🎯 ENHANCED SCAN OPTIONS:")
+    print("1. Static coin list (15 top coins)")
+    print("2. Top 10 market gainers (24h)")  
+    print("3. Top 10 market losers (24h)")
+    print("4. Mixed scan (5 gainers + 5 losers)")
+    print("5. Custom scan (specify your own limit)")
     
-    choice = input("Enter choice (1-2): ").strip()
+    choice = input("Enter choice (1-5): ").strip()
     
-    if choice == '1':
-        opportunities = scanner.scan_all_opportunities()
-    else:
-        scanner.TOP_COINS = scanner.TOP_COINS[:10]
-        opportunities = scanner.scan_all_opportunities()
-    
-    scanner.display_top_opportunities(opportunities)
-    
-    # Save for Stage 2
-    with open('opportunities/latest_scan.json', 'w') as f:
-        json.dump(opportunities, f, indent=2, default=str)
-    
-    print(f"\n💾 Results saved to opportunities/latest_scan.json")
-    print("🎯 Ready for Stage 2: Human selection and strategy execution")
+    try:
+        if choice == '1':
+            opportunities = scanner.scan_all_opportunities('static')
+        elif choice == '2':
+            opportunities = scanner.scan_all_opportunities('gainers', 10)
+        elif choice == '3':
+            opportunities = scanner.scan_all_opportunities('losers', 10)
+        elif choice == '4':
+            opportunities = scanner.scan_all_opportunities('mixed', 10)
+        elif choice == '5':
+            try:
+                scan_type = input("Scan type (gainers/losers/mixed): ").strip().lower()
+                if scan_type not in ['gainers', 'losers', 'mixed']:
+                    scan_type = 'static'
+                limit = int(input("Number of coins to scan (5-25): "))
+                limit = max(5, min(25, limit))  # Clamp between 5-25
+                opportunities = scanner.scan_all_opportunities(scan_type, limit)
+            except ValueError:
+                print("⚠️  Invalid input, using default static scan")
+                opportunities = scanner.scan_all_opportunities('static')
+        else:
+            print("⚠️  Invalid choice, using default static scan")
+            opportunities = scanner.scan_all_opportunities('static')
+        
+        scanner.display_top_opportunities(opportunities)
+        
+        # Save for Stage 2
+        with open('opportunities/latest_scan.json', 'w') as f:
+            json.dump(opportunities, f, indent=2, default=str)
+        
+        print(f"\n💾 Results saved to opportunities/latest_scan.json")
+        print("🎯 Ready for Stage 2: Human selection and strategy execution")
+        
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Scan interrupted by user")
+    except Exception as e:
+        print(f"\n❌ Scan failed: {e}")
+        print("🔄 Please try again or check your connection")
 
 if __name__ == "__main__":
     main() 
