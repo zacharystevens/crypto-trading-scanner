@@ -766,13 +766,29 @@ class OpportunityScanner:
             for i, mover in enumerate(top_movers, 1):
                 logger.info(f"{i}. {mover['symbol']}: {mover['change_24h']:.2f}% (Vol: ${mover['volume_24h']:,.0f})")
             
-            return [mover['symbol'] for mover in top_movers]
+            # Return full market data objects with proper field names for frontend
+            return [{
+                'symbol': mover['symbol'],
+                'price': mover['price'],
+                'change_24h': mover['change_24h'],
+                'volume': mover['volume_24h'],
+                'high_24h': mover['high_24h'],
+                'low_24h': mover['low_24h']
+            } for mover in top_movers]
             
         except Exception as e:
             logger.error(f"Error fetching market movers: {e}")
             print(f"⚠️  Could not fetch market movers: {e}")
             print("📋 Falling back to static coin list...")
-            return self.STATIC_COINS[:limit]
+            # Return static coins as market data objects
+            return [{
+                'symbol': symbol,
+                'price': 0.0,
+                'change_24h': 0.0,
+                'volume': 0,
+                'high_24h': 0.0,
+                'low_24h': 0.0
+            } for symbol in self.STATIC_COINS[:limit]]
     
     def get_market_mover_summary(self, symbols):
         """Get summary of market movers for display"""
