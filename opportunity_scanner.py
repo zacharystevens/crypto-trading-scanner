@@ -9,8 +9,6 @@ import ccxt
 import numpy as np
 import pandas as pd
 from scipy.stats import linregress
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import json
 import os
@@ -25,26 +23,20 @@ logger = logging.getLogger(__name__)
 
 class OpportunityScanner:
     def __init__(self):
-        # Market Coverage - Dynamic and Static Lists
-        self.STATIC_COINS = [
-            'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'XRP/USDT', 'ADA/USDT',
-            'SOL/USDT', 'AVAX/USDT', 'DOT/USDT', 'MATIC/USDT', 'LINK/USDT',
-            'UNI/USDT', 'LTC/USDT', 'BCH/USDT', 'ATOM/USDT', 'FIL/USDT'
-        ]
-        
-        # Dynamic Market Movers Settings
+        # Dynamic Market Coverage Settings
         self.MIN_VOLUME_USDT = 1000000  # $1M minimum 24h volume
         self.MIN_PRICE = 0.0001  # Minimum price to avoid micro-cap chaos
         self.MAX_PRICE = 100000  # Maximum price filter
         self.EXCLUDED_SYMBOLS = ['USDT', 'BUSD', 'USDC', 'DAI', 'TUSD']  # Stablecoins
         
         # Multi-Timeframe Analysis Settings - Professional Confluence System
-        self.TIMEFRAMES = ['15m', '1h', '4h']  # Active analysis timeframes
+        self.TIMEFRAMES = ['15m', '1h', '4h', '1d']  # Active analysis timeframes
         self.PRIMARY_TIMEFRAME = '1h'  # Main analysis timeframe
         self.TIMEFRAME_WEIGHTS = {  # Importance weighting for each timeframe
-            '4h': 0.4,   # Higher timeframe gets more weight
-            '1h': 0.35,  # Primary timeframe
-            '15m': 0.25  # Lower timeframe for precision
+            '1d': 0.35,  # Daily timeframe gets highest weight for long-term trend
+            '4h': 0.30,  # Higher timeframe for medium-term
+            '1h': 0.25,  # Primary timeframe for short-term
+            '15m': 0.10  # Lowest weight for precision/entries
         }
         
         # Advanced FVG Detection Settings (from original design)
@@ -70,7 +62,7 @@ class OpportunityScanner:
         self._create_directories()
         
         print("🔍 OPPORTUNITY SCANNER INITIALIZED")
-        print(f"📊 Static List: {len(self.STATIC_COINS)} coins | Dynamic Market Movers: Available")
+        print(f"📊 Dynamic symbol loading from exchange | Market Movers: Available")
         print(f"🎯 Looking for: FVG setups, trendline breaks, patterns, volume spikes")
         print()
     
@@ -226,7 +218,7 @@ class OpportunityScanner:
                                 'age': int(gap_age),
                                 'near_price': bool(near_gap),
                                 'proximity_ratio': float(proximity_ratio),
-                                'formation_index': int(i),
+                                'formation_index': int(i-1),  # Start from middle candle where gap forms
                                 'status': 'UNFILLED' if not self._is_gap_filled(df, i, candle1['high'], candle3['low']) else 'FILLED'
                             })
                     
@@ -266,7 +258,7 @@ class OpportunityScanner:
                                 'age': int(gap_age),
                                 'near_price': bool(near_gap),
                                 'proximity_ratio': float(proximity_ratio),
-                                'formation_index': int(i),
+                                'formation_index': int(i-1),  # Start from middle candle where gap forms
                                 'status': 'UNFILLED' if not self._is_gap_filled(df, i, candle3['high'], candle1['low']) else 'FILLED'
                             })
                                 
@@ -704,7 +696,7 @@ class OpportunityScanner:
         try:
             for timeframe in self.TIMEFRAMES:
                 # Adjust limit based on timeframe (higher timeframes need fewer periods)
-                limits = {'15m': 100, '1h': 100, '4h': 60}
+                limits = {'15m': 100, '1h': 100, '4h': 60, '1d': 30}
                 limit = limits.get(timeframe, 100)
                 
                 df = self.fetch_ohlcv_data(symbol, timeframe, limit)
@@ -788,7 +780,7 @@ class OpportunityScanner:
                 'volume': 0,
                 'high_24h': 0.0,
                 'low_24h': 0.0
-            } for symbol in self.STATIC_COINS[:limit]]
+            } for symbol in ['BTC/USDT', 'ETH/USDT', 'BNB/USDT'][:limit]]
     
     def get_market_mover_summary(self, symbols):
         """Get summary of market movers for display"""
@@ -991,88 +983,88 @@ class OpportunityScanner:
             return analysis
     
     def score_opportunity(self, analysis):
-        """Enhanced multi-timeframe scoring system - Professional Grade (0-110 points)
+        """Enhanced multi-timeframe scoring system - Professional Grade (0-100 points)
         
         Scoring Components:
-        - Enhanced FVG (0-25): Prioritizes unfilled gaps near current price
-        - Trendlines (0-20): Breakouts and trend strength validation  
-        - Patterns (0-25): High-confidence pattern formations
-        - Volume (0-15): Volume spike confirmation
-        - Momentum (0-15): Short-term price momentum
-        - Multi-Timeframe Confluence (0-20): Cross-timeframe agreement
+        - Enhanced FVG (0-22): Prioritizes unfilled gaps near current price
+        - Patterns (0-22): High-confidence pattern formations
+        - Multi-Timeframe Confluence (0-18): Cross-timeframe agreement
+        - Trendlines (0-18): Breakouts and trend strength validation
+        - Volume (0-12): Volume spike confirmation
+        - Momentum (0-8): Short-term price momentum
         """
         score = 0
         score_breakdown = {}
         
-        # Enhanced FVG Score (0-25 points)
+        # Enhanced FVG Score (0-22 points)
         fvg_score = 0
         unfilled_gaps = [fvg for fvg in analysis['fvg_zones'] if fvg.get('status') == 'UNFILLED']
         near_gaps = [fvg for fvg in unfilled_gaps if fvg.get('near_price', False)]
         
         for fvg in unfilled_gaps:
-            base_score = fvg['strength'] * 2
+            base_score = fvg['strength'] * 1.8  # Adjusted for 22-point scale
             if fvg.get('volume_confirmed', False):
                 base_score *= 1.5
             if fvg.get('near_price', False):
                 base_score *= 2  # Double score for gaps near current price
             fvg_score += base_score
         
-        fvg_score = min(fvg_score, 25)
+        fvg_score = min(fvg_score, 22)
         score += fvg_score
         score_breakdown['fvg'] = round(fvg_score, 1)
         
-        # Enhanced Trendline Score (0-20 points)
+        # Enhanced Trendline Score (0-18 points)
         trendline_score = 0
         if analysis['trendlines']:
             tl = analysis['trendlines']
             if tl.get('resistance_break'):
-                trendline_score += 20
+                trendline_score += 18
             elif tl.get('support_break'):
-                trendline_score += 20
+                trendline_score += 18
             else:
                 # Bonus for strong trendlines even without breakout
                 r_squared_avg = (tl.get('r_squared_high', 0) + tl.get('r_squared_low', 0)) / 2
-                trendline_score += r_squared_avg * 10
+                trendline_score += r_squared_avg * 9  # Adjusted for 18-point scale
         
-        trendline_score = min(trendline_score, 20)
+        trendline_score = min(trendline_score, 18)
         score += trendline_score
         score_breakdown['trendlines'] = round(trendline_score, 1)
         
-        # Pattern Recognition Score (0-25 points) - NEW!
+        # Pattern Recognition Score (0-22 points)
         pattern_score = 0
         high_confidence_patterns = [p for p in analysis['patterns'] if p.get('confidence', 0) > 70]
         
         for pattern in high_confidence_patterns:
-            base_pattern_score = pattern.get('strength', 0) * 2
+            base_pattern_score = pattern.get('strength', 0) * 1.8  # Adjusted for 22-point scale
             confidence_multiplier = pattern.get('confidence', 50) / 100
             pattern_score += base_pattern_score * confidence_multiplier
         
-        pattern_score = min(pattern_score, 25)
+        pattern_score = min(pattern_score, 22)
         score += pattern_score
         score_breakdown['patterns'] = round(pattern_score, 1)
         
-        # Enhanced Volume Score (0-15 points)
+        # Enhanced Volume Score (0-12 points)
         volume_score = 0
         if analysis['volume']['volume_spike']:
             volume_ratio = analysis['volume']['volume_ratio']
-            volume_score = min(volume_ratio * 3, 15)
+            volume_score = min(volume_ratio * 2.4, 12)  # Adjusted for 12-point scale
         
         score += volume_score
         score_breakdown['volume'] = round(volume_score, 1)
         
-        # Price Momentum Score (0-15 points)
+        # Price Momentum Score (0-8 points)
         momentum_score = 0
         if len(analysis.get('price_data', [])) >= 10:
             # Short-term momentum (last 5 vs previous 5)
             recent_avg = np.mean(analysis['price_data'][-5:])
             previous_avg = np.mean(analysis['price_data'][-10:-5])
             momentum = (recent_avg - previous_avg) / previous_avg
-            momentum_score = min(abs(momentum) * 100, 15)
+            momentum_score = min(abs(momentum) * 80, 8)  # Adjusted for 8-point scale
         
         score += momentum_score
         score_breakdown['momentum'] = round(momentum_score, 1)
         
-        # Multi-Timeframe Confluence Score (0-20 points) - ENHANCED!
+        # Multi-Timeframe Confluence Score (0-18 points) - ENHANCED!
         confluence_score = 0
         signals_count = 0
         
@@ -1094,26 +1086,26 @@ class OpportunityScanner:
             total_timeframes = len(mtf.get('timeframes_analyzed', []))
             
             # Base confluence score
-            confluence_score = confluence_strength * 10
+            confluence_score = confluence_strength * 9  # Adjusted for 18-point scale
             
             # Bonus for strong agreement across timeframes
             if agreement_count >= self.MIN_TIMEFRAMES_AGREE and total_timeframes >= 2:
                 agreement_ratio = agreement_count / total_timeframes
-                confluence_score += agreement_ratio * 10
+                confluence_score += agreement_ratio * 9  # Adjusted for 18-point scale
                 
                 # Extra bonus for all timeframes agreeing
-                if agreement_count == total_timeframes and total_timeframes == 3:
-                    confluence_score += 5  # Perfect confluence bonus
+                if agreement_count == total_timeframes and total_timeframes >= 3:
+                    confluence_score += 4  # Perfect confluence bonus (adjusted)
             
             # Strong signal bonus
             if mtf.get('strong_signals'):
-                confluence_score += len(mtf['strong_signals']) * 3
+                confluence_score += len(mtf['strong_signals']) * 2.5  # Adjusted
             
             # Penalty for conflicting signals
             if mtf.get('conflicting_signals'):
-                confluence_score -= len(mtf['conflicting_signals']) * 2
+                confluence_score -= len(mtf['conflicting_signals']) * 1.8  # Adjusted
             
-            confluence_score = max(0, min(confluence_score, 20))  # Cap at 20 points
+            confluence_score = max(0, min(confluence_score, 18))  # Cap at 18 points
         else:
             # Fallback to single timeframe confluence (original logic)
             if signals_count >= 3:
@@ -1128,7 +1120,7 @@ class OpportunityScanner:
         analysis['score_breakdown'] = score_breakdown
         analysis['total_signals'] = signals_count
         
-        return min(score, 110)  # Professional grade scoring with multi-timeframe confluence
+        return min(score, 100)  # Professional grade scoring with multi-timeframe confluence
     
     def analyze_single_coin(self, symbol):
         """Complete multi-timeframe analysis for a single coin - Professional Grade"""
@@ -1198,13 +1190,36 @@ class OpportunityScanner:
         
         return analysis
     
+    def get_all_usdt_symbols(self):
+        """Get all available USDT trading pairs from exchange"""
+        try:
+            markets = self.exchange.fetch_markets()
+            usdt_symbols = []
+            
+            for market in markets:
+                if (market['quote'] == 'USDT' and 
+                    market['active'] and 
+                    market['spot'] and
+                    market['base'] not in self.EXCLUDED_SYMBOLS):
+                    usdt_symbols.append(market['symbol'])
+            
+            usdt_symbols.sort()
+            print(f"📈 Found {len(usdt_symbols)} USDT trading pairs")
+            return usdt_symbols
+            
+        except Exception as e:
+            print(f"❌ Error fetching all symbols: {e}")
+            # Fallback to major pairs if API fails
+            return ['BTC/USDT', 'ETH/USDT', 'BNB/USDT']
+
     def scan_all_opportunities(self, scan_type='static', limit=15):
         """Scan coins for trading opportunities with dynamic market mover support"""
         
         # Determine which coins to scan
         if scan_type == 'static':
-            coins_to_scan = self.STATIC_COINS
-            scan_description = f"Static Top {len(coins_to_scan)} Coins"
+            coins_to_scan = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'XRP/USDT', 'ADA/USDT', 
+                           'SOL/USDT', 'AVAX/USDT', 'DOT/USDT', 'MATIC/USDT', 'LINK/USDT']
+            scan_description = f"Major Coins ({len(coins_to_scan)} symbols)"
         elif scan_type == 'gainers':
             coins_to_scan = self.fetch_market_movers('gainers', limit)
             scan_description = f"Top {len(coins_to_scan)} Market Gainers (24h)"
@@ -1216,9 +1231,35 @@ class OpportunityScanner:
             losers = self.fetch_market_movers('losers', limit//2)
             coins_to_scan = gainers + losers
             scan_description = f"Top {len(gainers)} Gainers + {len(losers)} Losers"
+        elif scan_type == 'all_coins':
+            # Get all available symbols and sample them intelligently
+            all_symbols = self.get_all_usdt_symbols()
+            # Combine market movers with random sampling for comprehensive coverage
+            try:
+                gainers = self.fetch_market_movers('gainers', limit//3)
+                losers = self.fetch_market_movers('losers', limit//3)
+                
+                # Get remaining symbols excluding market movers
+                mover_symbols = set([coin['symbol'] if isinstance(coin, dict) else coin for coin in gainers + losers])
+                remaining_symbols = [s for s in all_symbols if s not in mover_symbols]
+                
+                # Sample remaining symbols (prioritize higher volume coins)
+                import random
+                random.shuffle(remaining_symbols)
+                additional_coins = remaining_symbols[:limit - len(gainers) - len(losers)]
+                
+                coins_to_scan = gainers + losers + additional_coins
+                scan_description = f"Comprehensive Scan: {len(gainers)} Gainers + {len(losers)} Losers + {len(additional_coins)} Others"
+            except:
+                # Fallback to simple random sampling
+                all_symbols = self.get_all_usdt_symbols()
+                import random
+                random.shuffle(all_symbols)
+                coins_to_scan = all_symbols[:limit]
+                scan_description = f"Random Sample of {len(coins_to_scan)} Coins"
         else:
-            coins_to_scan = self.STATIC_COINS
-            scan_description = "Default Static List"
+            coins_to_scan = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT']
+            scan_description = "Default Major Pairs"
         print(f"🚀 PROFESSIONAL OPPORTUNITY SCANNER - ENHANCED VERSION")
         print(f"📊 Scanning: {scan_description}")
         print(f"🎯 Advanced FVG + Pattern Recognition + Multi-Timeframe Confluence")
@@ -1263,6 +1304,16 @@ class OpportunityScanner:
             print(f"\n⚠️  WARNING: {failed_count}/{len(coins_to_scan)} symbols failed ({failure_rate:.1%})")
             print("   Market data may be unreliable. Consider checking connection.")
         
+        # Filter out neutral opportunities (only show directional moves)
+        print(f"📊 Filtering neutral opportunities...")
+        pre_filter_count = len(opportunities)
+        opportunities = [opp for opp in opportunities 
+                        if opp.get('confluence_quality', {}).get('direction', 'NEUTRAL') in ['BULLISH', 'BEARISH']]
+        filtered_count = pre_filter_count - len(opportunities)
+        
+        if filtered_count > 0:
+            print(f"🔄 Filtered out {filtered_count} neutral opportunities (no clear direction)")
+        
         # Sort by score (highest first)
         opportunities.sort(key=lambda x: x['score'], reverse=True)
         
@@ -1286,7 +1337,7 @@ class OpportunityScanner:
             signal_class = opp.get('signal_class', 'UNKNOWN')
             class_emoji = {'STRONG': '🔥', 'MODERATE': '⚡', 'WEAK': '💤', 'UNKNOWN': '❓'}
             
-            print(f"\n#{i}. {opp['symbol']} - Score: {opp['score']:.0f}/110 {class_emoji.get(signal_class, '❓')} {signal_class}")
+            print(f"\n#{i}. {opp['symbol']} - Score: {opp['score']:.0f}/100 {class_emoji.get(signal_class, '❓')} {signal_class}")
             print(f"    💰 Current Price: ${opp['current_price']:.4f}")
             
             # Multi-Timeframe Confluence Summary
