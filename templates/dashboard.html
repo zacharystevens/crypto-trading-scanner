@@ -129,6 +129,13 @@
         
         .search-container {
             position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .autocomplete-wrapper {
+            position: relative;
+            flex: 1;
         }
         
         .search-input {
@@ -136,7 +143,8 @@
             border: 2px solid var(--border-color);
             color: var(--text-light);
             border-radius: 10px;
-            padding: 12px 45px 12px 15px;
+            padding: 12px 80px 12px 15px;
+            width: 100%;
         }
         
         .search-input:focus {
@@ -144,6 +152,117 @@
             border-color: var(--accent-color);
             color: var(--text-light);
             box-shadow: 0 0 15px rgba(15,52,96,0.5);
+        }
+        
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        
+        .autocomplete-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .autocomplete-dropdown::-webkit-scrollbar-track {
+            background: var(--secondary-color);
+            border-radius: 4px;
+        }
+        
+        .autocomplete-dropdown::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 4px;
+        }
+        
+        .autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+            background: #0f3460;
+        }
+        
+        .autocomplete-dropdown.show {
+            display: block;
+        }
+        
+        .autocomplete-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-light);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .autocomplete-item:hover,
+        .autocomplete-item.highlighted {
+            background: var(--accent-color);
+            color: var(--text-dark);
+        }
+        
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        
+        .autocomplete-symbol {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .autocomplete-name {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-left: 8px;
+        }
+        
+        .autocomplete-footer {
+            border-top: 1px solid var(--border-color);
+            background: var(--secondary-color);
+            position: sticky;
+            bottom: 0;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .autocomplete-footer .small {
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+        
+        .dropdown-arrow-btn {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 8px;
+            z-index: 1001;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        
+        .dropdown-arrow-btn:hover {
+            background: var(--accent-color);
+            color: var(--text-dark);
+            border-color: var(--accent-color);
+        }
+        
+        .dropdown-arrow-btn.active {
+            background: var(--accent-color);
+            color: var(--text-dark);
+            border-color: var(--accent-color);
+            transform: translateY(-50%) rotate(180deg);
         }
         
         .search-btn {
@@ -155,6 +274,7 @@
             border: none;
             border-radius: 8px;
             padding: 8px 12px;
+            z-index: 1001;
         }
         
         .loading {
@@ -229,11 +349,74 @@
             display: inline-block;
             background: var(--accent-color);
             color: var(--text-light);
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
             font-weight: bold;
-            margin-right: 10px;
+            margin-right: 8px;
+        }
+        
+        .symbol-pill.small {
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            border-radius: 12px;
+        }
+        
+        .gap-2 > * + * {
+            margin-left: 0.5rem;
+        }
+        
+        .chart-container {
+            min-height: 850px;
+            overflow: visible;
+        }
+        
+        .timeframes-display {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+        }
+        
+        .timeframe-indicator {
+            font-size: 0.7rem;
+            font-weight: 500;
+            padding: 2px 3px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 28px;
+            text-align: center;
+            cursor: help;
+            transition: all 0.2s ease;
+        }
+        
+        .timeframe-indicator:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .timeframe-indicator.text-success {
+            background: rgba(38, 166, 154, 0.1);
+            border-color: rgba(38, 166, 154, 0.3);
+        }
+        
+        .timeframe-indicator.text-success.fw-bold {
+            background: rgba(38, 166, 154, 0.2);
+            border-color: rgba(38, 166, 154, 0.5);
+            box-shadow: 0 0 8px rgba(38, 166, 154, 0.3);
+        }
+        
+        .timeframe-indicator.text-danger {
+            background: rgba(239, 83, 80, 0.1);
+            border-color: rgba(239, 83, 80, 0.3);
+        }
+        
+        .timeframe-indicator.text-danger.fw-bold {
+            background: rgba(239, 83, 80, 0.2);
+            border-color: rgba(239, 83, 80, 0.5);
+            box-shadow: 0 0 8px rgba(239, 83, 80, 0.3);
         }
     </style>
 </head>
@@ -260,37 +443,56 @@
     </nav>
 
     <div class="container-fluid mt-4">
-        <!-- Search Bar -->
-        <div class="row mb-4">
-            <div class="col-md-6 mx-auto">
+        <!-- Search Bar + Scanner Controls Row -->
+        <div class="row mb-3 align-items-center">
+            <div class="col-md-6">
                 <div class="search-container">
-                    <input type="text" class="form-control search-input" id="coin-search" 
-                           placeholder="Search any coin (e.g., BTC, ETH, DOGE)...">
+                    <div class="autocomplete-wrapper">
+                        <input type="text" class="form-control search-input" id="coin-search" 
+                               placeholder="Search any coin (e.g., BTC, ETH, DOGE)..." 
+                               autocomplete="off">
+                        <div class="autocomplete-dropdown" id="autocomplete-dropdown"></div>
+                    </div>
+                    <button class="btn dropdown-arrow-btn" onclick="toggleAllCoins()" title="Show all coins">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
                     <button class="btn search-btn" onclick="searchCoin()">
                         <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex gap-2 justify-content-end">
+                    <button class="btn btn-success btn-sm" onclick="runFullScan()">
+                        <i class="fas fa-search me-1"></i>Full Scan
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="scanMarketMovers()">
+                        <i class="fas fa-fire me-1"></i>Market Movers
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="exportOpportunities()">
+                        <i class="fas fa-download me-1"></i>Export
                     </button>
                 </div>
             </div>
         </div>
 
         <div class="row">
-            <!-- Top Gainers/Losers Section -->
-            <div class="col-md-8">
-                <!-- Market Movers -->
-                <div class="row mb-4">
+            <!-- Market Movers Section -->
+            <div class="col-md-5">
+                <div class="row mb-3">
                     <div class="col-md-6">
                         <div class="card gainer-card">
-                            <div class="card-header">
-                                <h5 class="mb-0">
+                            <div class="card-header py-2">
+                                <h6 class="mb-0">
                                     <i class="fas fa-chart-line text-success me-2"></i>
-                                    🚀 Top Gainers (24h)
-                                </h5>
+                                    🚀 Top Gainers
+                                </h6>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body py-2">
                                 <div id="top-gainers">
                                     <div class="loading">
-                                        <i class="fas fa-spinner fa-spin fa-2x text-success"></i>
-                                        <p class="mt-2">Scanning gainers...</p>
+                                        <i class="fas fa-spinner fa-spin text-success"></i>
+                                        <small class="ms-2">Loading...</small>
                                     </div>
                                 </div>
                             </div>
@@ -299,17 +501,17 @@
                     
                     <div class="col-md-6">
                         <div class="card loser-card">
-                            <div class="card-header">
-                                <h5 class="mb-0">
+                            <div class="card-header py-2">
+                                <h6 class="mb-0">
                                     <i class="fas fa-chart-line-down text-danger me-2"></i>
-                                    📉 Top Losers (24h)
-                                </h5>
+                                    📉 Top Losers
+                                </h6>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body py-2">
                                 <div id="top-losers">
                                     <div class="loading">
-                                        <i class="fas fa-spinner fa-spin fa-2x text-danger"></i>
-                                        <p class="mt-2">Scanning losers...</p>
+                                        <i class="fas fa-spinner fa-spin text-danger"></i>
+                                        <small class="ms-2">Loading...</small>
                                     </div>
                                 </div>
                             </div>
@@ -317,92 +519,70 @@
                     </div>
                 </div>
 
-                <!-- Best Opportunities -->
+                <!-- Best Opportunities - Narrower -->
                 <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
+                    <div class="card-header py-2">
+                        <h6 class="mb-0">
                             <i class="fas fa-bullseye me-2"></i>
-                            🎯 Best Trading Opportunities
-                        </h5>
+                            🎯 Trading Opportunities
+                        </h6>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body py-2">
                         <div id="opportunities-container">
                             <div class="loading">
-                                <i class="fas fa-spinner fa-spin fa-2x"></i>
-                                <p class="mt-2">Analyzing opportunities...</p>
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <small class="ms-2">Analyzing...</small>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Chart and Controls -->
-            <div class="col-md-4">
-                <!-- Scanner Controls -->
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-cogs me-2"></i>
-                            Scanner Controls
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-3">
-                            <button class="btn btn-success" onclick="runFullScan()">
-                                <i class="fas fa-search me-2"></i>
-                                Run Full Scan
-                            </button>
-                            <button class="btn btn-warning" onclick="scanMarketMovers()">
-                                <i class="fas fa-fire me-2"></i>
-                                Scan Market Movers
-                            </button>
-                            <button class="btn btn-primary" onclick="exportOpportunities()">
-                                <i class="fas fa-download me-2"></i>
-                                Export Results
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Scanner Stats -->
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-chart-bar me-2"></i>
-                            Scanner Stats
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="stats-card">
-                            <div class="stats-number text-success" id="opportunities-found">0</div>
-                            <div class="stats-label">Opportunities Found</div>
-                        </div>
-                        <hr>
-                        <div class="stats-card">
-                            <div class="stats-number text-warning" id="coins-scanned">0</div>
-                            <div class="stats-label">Coins Scanned</div>
-                        </div>
-                        <hr>
-                        <div class="stats-card">
-                            <div class="stats-number text-info" id="scan-time">--</div>
-                            <div class="stats-label">Last Scan</div>
+            <!-- Chart and Stats -->
+            <div class="col-md-7">
+                <div class="row mb-3">
+                    <!-- Compact Scanner Stats -->
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body py-2">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <span class="h5 mb-0 text-success" id="opportunities-found">0</span>
+                                            <small class="text-muted">Opportunities</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <span class="h5 mb-0 text-warning" id="coins-scanned">0</span>
+                                            <small class="text-muted">Coins Scanned</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <span class="h5 mb-0 text-info" id="scan-time">--</span>
+                                            <small class="text-muted">Last Scan</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Selected Coin Chart -->
                 <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
+                    <div class="card-header py-2">
+                        <h6 class="mb-0">
                             <i class="fas fa-chart-area me-2"></i>
                             Chart Analysis
-                            <span class="badge bg-primary" id="current-symbol">Select a coin</span>
-                        </h5>
+                            <span class="badge bg-primary ms-2" id="current-symbol">Select a coin</span>
+                        </h6>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-2">
                         <div class="chart-container" id="chart-container">
-                            <div class="loading">
-                                <i class="fas fa-chart-line fa-3x mb-3"></i>
+                            <div class="loading text-center py-5">
+                                <i class="fas fa-chart-line fa-2x mb-3"></i>
                                 <p>Click on any coin to view chart</p>
                             </div>
                         </div>
@@ -420,17 +600,24 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
+    <!-- Plotly.js for interactive charts -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    
     <script>
         // Global variables
         let selectedSymbol = null;
         let currentTimeframe = '1h';
         let refreshInterval;
         let lastScanTime = null;
+        let isLoadingChart = false; // Track chart loading status
+        let allSymbols = []; // Store all available symbols
+        let highlightedIndex = -1; // Track highlighted item in dropdown
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             initializeDashboard();
             startAutoRefresh();
+            loadAllSymbols(); // Load symbols for autocomplete
         });
 
         function initializeDashboard() {
@@ -438,11 +625,199 @@
             loadMarketMovers();
             loadOpportunities();
             
-            // Set up enter key for search
-            document.getElementById('coin-search').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    searchCoin();
+            // Set up autocomplete for search
+            setupAutocomplete();
+        }
+
+        function loadAllSymbols() {
+            fetch('/api/all_symbols')
+                .then(response => response.json())
+                .then(data => {
+                    allSymbols = data;
+                    console.log(`Loaded ${allSymbols.length} symbols for autocomplete`);
+                })
+                .catch(error => {
+                    console.error('Error loading symbols:', error);
+                });
+        }
+
+        function setupAutocomplete() {
+            const searchInput = document.getElementById('coin-search');
+            const dropdown = document.getElementById('autocomplete-dropdown');
+
+            // Handle input changes
+            searchInput.addEventListener('input', function(e) {
+                const query = e.target.value.trim();
+                const arrowBtn = document.querySelector('.dropdown-arrow-btn');
+                
+                // Reset arrow button when typing
+                arrowBtn.classList.remove('active');
+                
+                if (query.length === 0) {
+                    hideDropdown();
+                    return;
                 }
+                showFilteredResults(query);
+            });
+
+            // Handle keyboard navigation
+            searchInput.addEventListener('keydown', function(e) {
+                const dropdown = document.getElementById('autocomplete-dropdown');
+                const items = dropdown.querySelectorAll('.autocomplete-item');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    highlightedIndex = Math.min(highlightedIndex + 1, items.length - 1);
+                    updateHighlight(items);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    highlightedIndex = Math.max(highlightedIndex - 1, -1);
+                    updateHighlight(items);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (highlightedIndex >= 0 && items[highlightedIndex]) {
+                        selectSymbolFromDropdown(items[highlightedIndex].dataset.symbol);
+                    } else {
+                        searchCoin();
+                    }
+                } else if (e.key === 'Escape') {
+                    hideDropdown();
+                }
+            });
+
+            // Handle focus to reset arrow button
+            searchInput.addEventListener('focus', function(e) {
+                const arrowBtn = document.querySelector('.dropdown-arrow-btn');
+                if (e.target.value.trim().length > 0) {
+                    arrowBtn.classList.remove('active');
+                }
+            });
+
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.search-container')) {
+                    hideDropdown();
+                }
+            });
+        }
+
+        function showFilteredResults(query) {
+            const dropdown = document.getElementById('autocomplete-dropdown');
+            const normalizedQuery = query.toLowerCase();
+            
+            // Filter symbols based on query
+            const filteredSymbols = allSymbols.filter(symbol => 
+                symbol.base.toLowerCase().includes(normalizedQuery) ||
+                symbol.symbol.toLowerCase().includes(normalizedQuery)
+            ).slice(0, 10); // Limit to 10 results
+
+            if (filteredSymbols.length === 0) {
+                hideDropdown();
+                return;
+            }
+
+            // Create dropdown HTML
+            const html = filteredSymbols.map((symbol, index) => `
+                <div class="autocomplete-item" data-symbol="${symbol.symbol}" data-index="${index}">
+                    <div>
+                        <span class="autocomplete-symbol">${symbol.base}</span>
+                        <span class="autocomplete-name">USDT</span>
+                    </div>
+                    <div class="small text-muted">${symbol.symbol}</div>
+                </div>
+            `).join('');
+
+            dropdown.innerHTML = html;
+            dropdown.classList.add('show');
+            
+            // Reset highlight
+            highlightedIndex = -1;
+
+            // Add click handlers
+            dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    selectSymbolFromDropdown(this.dataset.symbol);
+                });
+            });
+        }
+
+        function updateHighlight(items) {
+            items.forEach((item, index) => {
+                item.classList.toggle('highlighted', index === highlightedIndex);
+            });
+        }
+
+        function selectSymbolFromDropdown(symbol) {
+            const searchInput = document.getElementById('coin-search');
+            searchInput.value = symbol.replace('/USDT', '');
+            hideDropdown();
+            selectCoin(symbol);
+        }
+
+        function hideDropdown() {
+            document.getElementById('autocomplete-dropdown').classList.remove('show');
+            document.querySelector('.dropdown-arrow-btn').classList.remove('active');
+            highlightedIndex = -1;
+        }
+
+        function toggleAllCoins() {
+            const dropdown = document.getElementById('autocomplete-dropdown');
+            const arrowBtn = document.querySelector('.dropdown-arrow-btn');
+            
+            if (dropdown.classList.contains('show')) {
+                // Hide dropdown
+                hideDropdown();
+            } else {
+                // Show all coins
+                showAllCoins();
+                arrowBtn.classList.add('active');
+            }
+        }
+
+        function showAllCoins() {
+            const dropdown = document.getElementById('autocomplete-dropdown');
+            
+            if (allSymbols.length === 0) {
+                dropdown.innerHTML = '<div class="autocomplete-item"><div>Loading symbols...</div></div>';
+                dropdown.classList.add('show');
+                return;
+            }
+
+            // Show ALL symbols when clicking dropdown arrow
+            const symbolsToShow = allSymbols;
+            
+            // Create dropdown HTML
+            const coinItems = symbolsToShow.map((symbol, index) => `
+                <div class="autocomplete-item" data-symbol="${symbol.symbol}" data-index="${index}">
+                    <div>
+                        <span class="autocomplete-symbol">${symbol.base}</span>
+                        <span class="autocomplete-name">USDT</span>
+                    </div>
+                    <div class="small text-muted">${symbol.symbol}</div>
+                </div>
+            `).join('');
+            
+            // Add footer with total count
+            const footer = `
+                <div class="autocomplete-footer">
+                    <div class="small text-muted text-center py-2">
+                        <i class="fas fa-info-circle me-1"></i>
+                        ${allSymbols.length} coins available • Scroll to see more
+                    </div>
+                </div>
+            `;
+
+            dropdown.innerHTML = coinItems + footer;
+            dropdown.classList.add('show');
+            
+            // Reset highlight
+            highlightedIndex = -1;
+
+            // Add click handlers
+            dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    selectSymbolFromDropdown(this.dataset.symbol);
+                });
             });
         }
 
@@ -472,16 +847,16 @@
                 return;
             }
 
-            const html = gainers.slice(0, 5).map(coin => `
-                <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded opportunity-card" 
+            const html = gainers.slice(0, 4).map(coin => `
+                <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded opportunity-card" 
                      onclick="selectCoin('${coin.symbol}')">
                     <div>
-                        <span class="symbol-pill">${coin.symbol.replace('/USDT', '')}</span>
-                        <div class="small">$${parseFloat(coin.price).toFixed(coin.price < 1 ? 4 : 2)}</div>
+                        <span class="symbol-pill small">${coin.symbol.replace('/USDT', '')}</span>
+                        <div class="small">+${coin.change_24h.toFixed(1)}%</div>
                     </div>
                     <div class="text-end">
-                        <div class="price-change-positive">+${coin.change_24h.toFixed(2)}%</div>
-                        <div class="small">${formatVolume(coin.volume)}</div>
+                        <div class="small">$${parseFloat(coin.price).toFixed(coin.price < 1 ? 4 : 2)}</div>
+                        <div class="small text-muted">${formatVolume(coin.volume)}</div>
                     </div>
                 </div>
             `).join('');
@@ -496,16 +871,16 @@
                 return;
             }
 
-            const html = losers.slice(0, 5).map(coin => `
-                <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded opportunity-card" 
+            const html = losers.slice(0, 4).map(coin => `
+                <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded opportunity-card" 
                      onclick="selectCoin('${coin.symbol}')">
                     <div>
-                        <span class="symbol-pill">${coin.symbol.replace('/USDT', '')}</span>
-                        <div class="small">$${parseFloat(coin.price).toFixed(coin.price < 1 ? 4 : 2)}</div>
+                        <span class="symbol-pill small">${coin.symbol.replace('/USDT', '')}</span>
+                        <div class="small">${coin.change_24h.toFixed(1)}%</div>
                     </div>
                     <div class="text-end">
-                        <div class="price-change-negative">${coin.change_24h.toFixed(2)}%</div>
-                        <div class="small">${formatVolume(coin.volume)}</div>
+                        <div class="small">$${parseFloat(coin.price).toFixed(coin.price < 1 ? 4 : 2)}</div>
+                        <div class="small text-muted">${formatVolume(coin.volume)}</div>
                     </div>
                 </div>
             `).join('');
@@ -544,34 +919,59 @@
 
             const html = opportunities.slice(0, 10).map(opp => {
                 const score = opp.score || 0;
-                const scoreClass = score >= 50 ? 'high' : score >= 30 ? 'medium' : 'low';
+                const scoreClass = score >= 70 ? 'high' : score >= 50 ? 'medium' : 'low';
                 const cardClass = scoreClass === 'high' ? 'opportunity-high' : 
                                 scoreClass === 'medium' ? 'opportunity-medium' : 'opportunity-low';
                 
                 // Create analysis summary from available data
                 const direction = opp.confluence_quality?.direction || 'NEUTRAL';
                 const signalClass = opp.signal_class || 'MODERATE';
-                const analysisText = `${signalClass} ${direction} signal detected`;
+                
+                // Generate timeframe analysis display
+                let timeframeDisplay = '';
+                if (opp.multi_timeframe && opp.multi_timeframe.timeframe_results) {
+                    const tfResults = opp.multi_timeframe.timeframe_results;
+                    const timeframes = ['15m', '1h', '4h', '1d']; // Standard order
+                    
+                    const tfAnalysis = timeframes.map(tf => {
+                        if (tfResults[tf]) {
+                            const tfData = tfResults[tf];
+                            const direction = tfData.dominant_direction;
+                            const strength = tfData.signal_strength || 0;
+                            
+                            let arrow = '→';
+                            let colorClass = 'text-muted';
+                            
+                            if (direction === 'BULLISH' && strength > 0.3) {
+                                arrow = '↗';
+                                colorClass = strength > 0.6 ? 'text-success fw-bold' : 'text-success';
+                            } else if (direction === 'BEARISH' && strength > 0.3) {
+                                arrow = '↘';
+                                colorClass = strength > 0.6 ? 'text-danger fw-bold' : 'text-danger';
+                            }
+                            
+                            return `<span class="timeframe-indicator ${colorClass}" title="${tf}: ${direction} (${(strength*100).toFixed(0)}%)">${tf}${arrow}</span>`;
+                        }
+                        return `<span class="timeframe-indicator text-muted" title="${tf}: No data">${tf}→</span>`;
+                    }).join(' ');
+                    
+                    timeframeDisplay = `<div class="timeframes-display small mb-1">${tfAnalysis}</div>`;
+                }
                 
                 return `
-                    <div class="card mb-3 opportunity-card ${cardClass}" onclick="selectCoin('${opp.symbol}')">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="mb-1">
-                                        <span class="symbol-pill">${opp.symbol.replace('/USDT', '')}</span>
+                    <div class="card mb-2 opportunity-card ${cardClass}" onclick="selectCoin('${opp.symbol}')">
+                        <div class="card-body py-2 px-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="symbol-pill me-2">${opp.symbol.replace('/USDT', '')}</span>
                                         <span class="opportunity-score score-${scoreClass}">${score.toFixed(0)}</span>
-                                    </h6>
-                                    <p class="mb-1 small">
-                                        <strong>Setup:</strong> ${signalClass} ${direction}
-                                    </p>
-                                    <p class="mb-0 small text-muted">
-                                        ${analysisText}
-                                    </p>
-                                </div>
-                                <div class="text-end">
-                                    <div class="small">$${parseFloat(opp.current_price || 0).toFixed(opp.current_price < 1 ? 4 : 2)}</div>
-                                    <div class="small text-muted">${opp.primary_timeframe || '1h'}</div>
+                                        <small class="text-muted ms-auto">$${parseFloat(opp.current_price || 0).toFixed(opp.current_price < 1 ? 4 : 2)}</small>
+                                    </div>
+                                    ${timeframeDisplay}
+                                    <div class="small text-muted">
+                                        ${signalClass} ${direction}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -589,22 +989,84 @@
         }
 
         function loadChart(symbol) {
+            // Prevent multiple simultaneous chart loading requests
+            if (isLoadingChart) {
+                return;
+            }
+            
+            isLoadingChart = true;
             const container = document.getElementById('chart-container');
+            
+            // Force clear any existing content and show spinner
             container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Loading chart...</p></div>';
             
-            fetch(`/api/chart/${symbol}/${currentTimeframe}`)
+            // Add timeout to prevent infinite loading
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                isLoadingChart = false; // Reset loading state on timeout
+                displayError('chart-container', 'Chart loading timed out. Please try again.');
+            }, 30000); // 30 second timeout
+            
+            fetch(`/api/chart/${symbol}/${currentTimeframe}`, {
+                signal: controller.signal
+            })
                 .then(response => response.json())
                 .then(data => {
+                    clearTimeout(timeoutId); // Clear timeout on successful response
+                    isLoadingChart = false; // Reset loading state on success
                     if (data.chart) {
                         const chartData = JSON.parse(data.chart);
-                        Plotly.newPlot('chart-container', chartData.data, chartData.layout, {responsive: true});
+                        
+                        // Clean Plotly configuration without clutter
+                        const config = {
+                            responsive: true,
+                            displayModeBar: true,
+                            displaylogo: false,
+                            modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d', 'autoScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian'],
+                            scrollZoom: true
+                        };
+                        
+                        // Ensure proper layout with enough bottom margin for volume
+                        chartData.layout.autosize = true;
+                        chartData.layout.margin = {l: 60, r: 20, t: 80, b: 100};
+                        
+                        // Create the chart with enhanced configuration
+                        Plotly.newPlot('chart-container', chartData.data, chartData.layout, config)
+                            .then(() => {
+                                console.log('Chart loaded successfully for', symbol);
+                                
+                                // Clear any remaining loading elements after chart renders
+                                setTimeout(() => {
+                                    const container = document.getElementById('chart-container');
+                                    const loadingElements = container.querySelectorAll('.loading');
+                                    loadingElements.forEach(el => el.remove());
+                                }, 100);
+                                
+                                // Add custom event handlers for better user experience
+                                document.getElementById('chart-container').on('plotly_relayout', function(eventdata) {
+                                    console.log('Chart relayout event:', eventdata);
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Error creating Plotly chart:', error);
+                                isLoadingChart = false; // Reset loading state on Plotly error
+                                displayError('chart-container', 'Failed to render chart - ' + error.message);
+                            });
                     } else {
+                        isLoadingChart = false; // Reset loading state when no chart data
                         displayError('chart-container', 'Chart data unavailable');
                     }
                 })
                 .catch(error => {
+                    clearTimeout(timeoutId); // Clear timeout on error
+                    isLoadingChart = false; // Reset loading state on error
                     console.error('Error loading chart:', error);
-                    displayError('chart-container', 'Failed to load chart');
+                    if (error.name === 'AbortError') {
+                        // Request was aborted due to timeout, error already displayed
+                        return;
+                    }
+                    displayError('chart-container', 'Failed to load chart - ' + error.message);
                 });
         }
 
@@ -676,7 +1138,8 @@
         function refreshAllData() {
             loadMarketMovers();
             loadOpportunities();
-            if (selectedSymbol) {
+            // Only refresh chart if not currently loading and symbol is selected
+            if (selectedSymbol && !isLoadingChart) {
                 loadChart(selectedSymbol);
             }
         }
@@ -685,8 +1148,8 @@
             // Update time every second
             setInterval(updateCurrentTime, 1000);
             
-            // Refresh data every 30 seconds
-            refreshInterval = setInterval(refreshAllData, 30000);
+            // Refresh data every 60 seconds (reduced frequency to prevent conflicts)
+            refreshInterval = setInterval(refreshAllData, 60000);
         }
 
         function displayError(containerId, message) {
@@ -697,6 +1160,25 @@
                 </div>
             `;
         }
+
+        // Function to clear any stuck loading states
+        function clearLoadingState() {
+            isLoadingChart = false;
+            const container = document.getElementById('chart-container');
+            const loadingElements = container.querySelectorAll('.loading');
+            loadingElements.forEach(el => el.remove());
+        }
+
+        // Check for stuck loading states every 10 seconds
+        setInterval(() => {
+            const container = document.getElementById('chart-container');
+            const hasChart = container.querySelector('.js-plotly-plot');
+            const hasLoading = container.querySelector('.loading');
+            
+            if (hasChart && hasLoading) {
+                clearLoadingState();
+            }
+        }, 10000);
 
         function formatVolume(volume) {
             if (volume >= 1e9) return (volume / 1e9).toFixed(1) + 'B';

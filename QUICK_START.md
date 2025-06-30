@@ -57,7 +57,7 @@ python btc_professional_demo.py
 - Enhanced FVG detection with volume confirmation
 - Advanced pattern recognition (Head & Shoulders, etc.)
 - Professional filtering ($1M+ volume requirement)
-- 110-point enhanced scoring system
+- 100-point enhanced scoring system
 
 ### Option C: Quick BTC Demo
 1. **Enter your account size** (try $50,000 for realistic demo)
@@ -73,7 +73,7 @@ python btc_professional_demo.py
     2. W/USDT       🚀 +25.00% (Vol: $22,973,917)
     3. LISTA/USDT   🚀 +16.59% (Vol: $8,240,762)
 
-#1. LISTA/USDT - Score: 63/110 🔥 STRONG
+#1. LISTA/USDT - Score: 63/100 🔥 STRONG
     💰 Current Price: $0.2385
     🎯 Confluence: 📈 BULLISH (100.0%) - 2/3 timeframes agree 🎯 STRONG
     📊 Timeframes: 15m:➡️0.0 | 1h:📈0.7 | 4h:📈1.0
@@ -90,7 +90,7 @@ python btc_professional_demo.py
     1. LQTY/USDT    📉 -12.34% (Vol: $6,803,865)
     2. KAIA/USDT    📉  -6.03% (Vol: $5,443,928)
 
-#1. KAIA/USDT - Score: 56/110 🔥 STRONG
+#1. KAIA/USDT - Score: 56/100 🔥 STRONG
     💰 Current Price: $0.1684
     🎯 Confluence: ➡️ NEUTRAL (100.0%) - 3/3 timeframes agree 🎯 STRONG
     📊 Timeframes: 15m:➡️0.0 | 1h:➡️0.2 | 4h:➡️0.0
@@ -129,7 +129,7 @@ Confluence Analysis: BULLISH (100.0%) - 1/3 agree
 - ✅ **Professional filtering** (191+ pairs → $1M+ volume only)
 - ✅ **Enhanced pattern recognition** (Head & Shoulders, Triple Tops/Bottoms)
 - ✅ **Advanced FVG analysis** (3-candle, volume-confirmed)
-- ✅ **110-point scoring system** (enhanced from 100-point)
+- ✅ **100-point scoring system** (enhanced from 100-point)
 - ✅ **Signal classification** (STRONG/MODERATE/WEAK validation)
 
 ### Core Professional Standards

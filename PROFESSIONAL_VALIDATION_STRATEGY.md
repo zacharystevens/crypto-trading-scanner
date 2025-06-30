@@ -315,20 +315,16 @@ the system would have done. No curve-fitting, same parameters."
 - **Age penalty:** Older gaps receive reduced significance
 - **Multiple gap analysis:** Identifies gap clusters and zones
 
-### **110-Point Enhanced Scoring System**
-**What Changed:** 100-point basic scoring → 110-point professional institutional system
+### **100-Point Enhanced Scoring System**
+**What Changed:** 100-point basic scoring → 100-point professional institutional system
 
-#### **Score Distribution (Total: 110 points):**
-```
-Enhanced FVG Score:           0-25 points (volume-confirmed gaps prioritized)
-Pattern Recognition Score:    0-25 points (high-confidence patterns only)
-Trendline Analysis Score:     0-20 points (R-squared statistical validation)
-Volume Analysis Score:        0-15 points (spike classification: STRONG/EXPLOSIVE)
-Momentum Score:              0-15 points (short-term directional strength)
-Multi-Timeframe Confluence:  0-20 points (weighted timeframe agreement)
-Perfect Confluence Bonus:    0-5 points (all timeframes agree)
-Strong Signal Bonuses:       0-3 points per strong signal detected
-```
+#### **Score Distribution (Total: 100 points):**
+- **FVG Analysis** (22 points): Unfilled gaps near price get higher scores
+- **Pattern Recognition** (22 points): Clean breakouts, confirmed patterns
+- **Confluence Score** (18 points): Multi-timeframe agreement strength
+- **Trendline Analysis** (18 points): Support/resistance break confirmations
+- **Volume Analysis** (12 points): Above-average volume confirmation
+- **Momentum Indicators** (8 points): RSI, MACD alignment
 
 #### **Professional Signal Thresholds:**
 - **STRONG:** 80+ points (institutional quality setups)
@@ -426,7 +422,7 @@ This is real-time institutional market intelligence."
 ### **Professional Analysis Walkthrough (2 minutes)**
 ```
 "Here's what institutional traders see:
-Score: [LIVE]/110 - [STRONG/MODERATE/WEAK]
+Score: [LIVE]/100 - [STRONG/MODERATE/WEAK]
 Confluence: [PERCENTAGE]% - [DIRECTION] 
 Pattern: [PATTERN] - Confidence: [PERCENTAGE]%
 FVG: [COUNT] zones, [UNFILLED] unfilled
