@@ -418,6 +418,31 @@
             border-color: rgba(239, 83, 80, 0.5);
             box-shadow: 0 0 8px rgba(239, 83, 80, 0.3);
         }
+
+        /* Custom scrollbar for tile content */
+        .card-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .card-body::-webkit-scrollbar-track {
+            background: var(--secondary-color);
+            border-radius: 3px;
+        }
+
+        .card-body::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 3px;
+        }
+
+        .card-body::-webkit-scrollbar-thumb:hover {
+            background: #0f3460;
+        }
+
+        /* Market cap card styling */
+        .market-cap-card {
+            border-left: 4px solid #17a2b8 !important;
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(23,162,184,0.05) 100%) !important;
+        }
     </style>
 </head>
 <body>
@@ -469,9 +494,62 @@
                     <button class="btn btn-warning btn-sm" onclick="scanMarketMovers()">
                         <i class="fas fa-fire me-1"></i>Market Movers
                     </button>
+                    <button class="btn btn-info btn-sm" onclick="startExtendedAnalysis()" id="extended-analysis-btn">
+                        <i class="fas fa-hourglass-start me-1"></i>Extended Analysis
+                    </button>
                     <button class="btn btn-primary btn-sm" onclick="exportOpportunities()">
                         <i class="fas fa-download me-1"></i>Export
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Extended Analysis Status Row -->
+        <div class="row mb-3" id="analysis-status-row" style="display: none;">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="fas fa-analytics me-2"></i>Extended Analysis Status
+                        </h6>
+                        <button class="btn btn-sm btn-outline-light" onclick="hideAnalysisStatus()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 mb-1" id="curated-count">30</div>
+                                    <div class="small text-muted">Curated Coins</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 mb-1" id="remaining-count">-</div>
+                                    <div class="small text-muted">Remaining Coins</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 mb-1" id="estimated-time">-</div>
+                                    <div class="small text-muted">Est. Time (hours)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 mb-1" id="analysis-phase">Ready</div>
+                                    <div class="small text-muted">Current Phase</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" role="progressbar" style="width: 0%" id="analysis-progress"></div>
+                            </div>
+                            <div class="small text-muted mt-1" id="progress-text">Click "Extended Analysis" to analyze all remaining coins (throttled at 30 seconds per coin)</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -480,7 +558,7 @@
             <!-- Market Movers Section -->
             <div class="col-md-5">
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="card gainer-card">
                             <div class="card-header py-2">
                                 <h6 class="mb-0">
@@ -488,7 +566,7 @@
                                     🚀 Top Gainers
                                 </h6>
                             </div>
-                            <div class="card-body py-2">
+                            <div class="card-body py-2" style="max-height: 300px; overflow-y: auto;">
                                 <div id="top-gainers">
                                     <div class="loading">
                                         <i class="fas fa-spinner fa-spin text-success"></i>
@@ -499,7 +577,7 @@
                         </div>
                     </div>
                     
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="card loser-card">
                             <div class="card-header py-2">
                                 <h6 class="mb-0">
@@ -507,10 +585,29 @@
                                     📉 Top Losers
                                 </h6>
                             </div>
-                            <div class="card-body py-2">
+                            <div class="card-body py-2" style="max-height: 300px; overflow-y: auto;">
                                 <div id="top-losers">
                                     <div class="loading">
                                         <i class="fas fa-spinner fa-spin text-danger"></i>
+                                        <small class="ms-2">Loading...</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card market-cap-card" style="border-left: 4px solid #17a2b8; background: linear-gradient(135deg, var(--card-bg) 0%, rgba(23,162,184,0.05) 100%);">
+                            <div class="card-header py-2">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-coins text-info me-2"></i>
+                                    💎 Market Cap Leaders
+                                </h6>
+                            </div>
+                            <div class="card-body py-2" style="max-height: 300px; overflow-y: auto;">
+                                <div id="top-market-cap">
+                                    <div class="loading">
+                                        <i class="fas fa-spinner fa-spin text-info"></i>
                                         <small class="ms-2">Loading...</small>
                                     </div>
                                 </div>
@@ -838,6 +935,21 @@
                     displayError('top-gainers', 'Failed to load gainers');
                     displayError('top-losers', 'Failed to load losers');
                 });
+            
+            // Also load market cap data
+            loadMarketCap();
+        }
+
+        function loadMarketCap() {
+            fetch('/api/top_market_cap')
+                .then(response => response.json())
+                .then(data => {
+                    displayMarketCap(data || []);
+                })
+                .catch(error => {
+                    console.error('Error loading market cap:', error);
+                    displayError('top-market-cap', 'Failed to load market cap data');
+                });
         }
 
         function displayGainers(gainers) {
@@ -847,12 +959,12 @@
                 return;
             }
 
-            const html = gainers.slice(0, 4).map(coin => `
+            const html = gainers.slice(0, 10).map(coin => `
                 <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded opportunity-card" 
                      onclick="selectCoin('${coin.symbol}')">
                     <div>
                         <span class="symbol-pill small">${coin.symbol.replace('/USDT', '')}</span>
-                        <div class="small">+${coin.change_24h.toFixed(1)}%</div>
+                        <div class="small text-success">+${coin.change_24h.toFixed(1)}%</div>
                     </div>
                     <div class="text-end">
                         <div class="small">$${parseFloat(coin.price).toFixed(coin.price < 1 ? 4 : 2)}</div>
@@ -871,12 +983,12 @@
                 return;
             }
 
-            const html = losers.slice(0, 4).map(coin => `
+            const html = losers.slice(0, 10).map(coin => `
                 <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded opportunity-card" 
                      onclick="selectCoin('${coin.symbol}')">
                     <div>
                         <span class="symbol-pill small">${coin.symbol.replace('/USDT', '')}</span>
-                        <div class="small">${coin.change_24h.toFixed(1)}%</div>
+                        <div class="small text-danger">${coin.change_24h.toFixed(1)}%</div>
                     </div>
                     <div class="text-end">
                         <div class="small">$${parseFloat(coin.price).toFixed(coin.price < 1 ? 4 : 2)}</div>
@@ -884,6 +996,35 @@
                     </div>
                 </div>
             `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        function displayMarketCap(marketCapCoins) {
+            const container = document.getElementById('top-market-cap');
+            if (marketCapCoins.length === 0) {
+                container.innerHTML = '<p class="text-muted">No market cap data available</p>';
+                return;
+            }
+
+            const html = marketCapCoins.slice(0, 10).map((coin, index) => {
+                const changeClass = coin.change_24h >= 0 ? 'text-success' : 'text-danger';
+                const changeSign = coin.change_24h >= 0 ? '+' : '';
+                
+                return `
+                    <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded opportunity-card" 
+                         onclick="selectCoin('${coin.symbol}')">
+                        <div>
+                            <span class="symbol-pill small">${coin.symbol.replace('/USDT', '')}</span>
+                            <div class="small ${changeClass}">${changeSign}${coin.change_24h.toFixed(1)}%</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="small">$${parseFloat(coin.price).toFixed(coin.price < 1 ? 4 : 2)}</div>
+                            <div class="small text-muted">${formatVolume(coin.volume)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
             
             container.innerHTML = html;
         }
@@ -1136,7 +1277,7 @@
         }
 
         function refreshAllData() {
-            loadMarketMovers();
+            loadMarketMovers(); // This now also loads market cap data
             loadOpportunities();
             // Only refresh chart if not currently loading and symbol is selected
             if (selectedSymbol && !isLoadingChart) {
@@ -1185,6 +1326,115 @@
             if (volume >= 1e6) return (volume / 1e6).toFixed(1) + 'M';
             if (volume >= 1e3) return (volume / 1e3).toFixed(1) + 'K';
             return volume.toFixed(0);
+        }
+
+        // Extended Analysis Functions
+        function startExtendedAnalysis() {
+            // Show the status section
+            document.getElementById('analysis-status-row').style.display = 'block';
+            
+            // Load analysis status first
+            loadAnalysisStatus();
+            
+            // Update button to show it's starting
+            const btn = document.getElementById('extended-analysis-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Starting...';
+            btn.disabled = true;
+            
+            // Update progress
+            document.getElementById('analysis-phase').textContent = 'Starting';
+            document.getElementById('progress-text').textContent = 'Initializing extended analysis...';
+            
+            // Start the extended analysis
+            fetch('/api/extended_analysis')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(`Extended Analysis Error: ${data.error}`);
+                        resetExtendedAnalysisButton();
+                    } else {
+                        // Update with results
+                        updateExtendedAnalysisResults(data);
+                        resetExtendedAnalysisButton();
+                    }
+                })
+                .catch(error => {
+                    console.error('Extended analysis error:', error);
+                    alert('Extended analysis failed. Check console for details.');
+                    resetExtendedAnalysisButton();
+                });
+        }
+
+        function loadAnalysisStatus() {
+            fetch('/api/analysis_status')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        document.getElementById('curated-count').textContent = data.curated_coins;
+                        document.getElementById('remaining-count').textContent = data.remaining_coins;
+                        document.getElementById('estimated-time').textContent = data.estimated_extended_time_hours;
+                        
+                        // Update progress text with more details
+                        const progressText = `Extended analysis will process ${data.remaining_coins} additional coins at 30 seconds per coin (Est. ${data.estimated_extended_time_minutes} minutes)`;
+                        document.getElementById('progress-text').textContent = progressText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading analysis status:', error);
+                });
+        }
+
+        function updateExtendedAnalysisResults(opportunities) {
+            // Update phase
+            document.getElementById('analysis-phase').textContent = 'Complete';
+            
+            // Update progress bar to 100%
+            document.getElementById('analysis-progress').style.width = '100%';
+            document.getElementById('analysis-progress').classList.add('bg-success');
+            
+            // Update progress text
+            document.getElementById('progress-text').textContent = `Extended analysis complete! Found ${opportunities.length} additional opportunities.`;
+            
+            // You could display these results in a separate section or merge with existing opportunities
+            console.log('Extended analysis results:', opportunities);
+            
+            // For now, let's just show an alert with the count
+            alert(`Extended Analysis Complete!\n\nFound ${opportunities.length} additional trading opportunities.\n\nResults logged to console.`);
+        }
+
+        function resetExtendedAnalysisButton() {
+            const btn = document.getElementById('extended-analysis-btn');
+            btn.innerHTML = '<i class="fas fa-hourglass-start me-1"></i>Extended Analysis';
+            btn.disabled = false;
+        }
+
+        function hideAnalysisStatus() {
+            document.getElementById('analysis-status-row').style.display = 'none';
+        }
+
+        function runComprehensiveAnalysis() {
+            // This would run both curated 30 + extended analysis
+            // Show status section
+            document.getElementById('analysis-status-row').style.display = 'block';
+            loadAnalysisStatus();
+            
+            document.getElementById('analysis-phase').textContent = 'Comprehensive';
+            document.getElementById('progress-text').textContent = 'Running comprehensive analysis (Phase 1: Curated 30, Phase 2: Extended with throttling)...';
+            
+            fetch('/api/comprehensive_analysis')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(`Comprehensive Analysis Error: ${data.error}`);
+                    } else {
+                        updateExtendedAnalysisResults(data);
+                        alert(`Comprehensive Analysis Complete!\n\nAnalyzed all available coins.\nFound ${data.length} total opportunities.`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Comprehensive analysis error:', error);
+                    alert('Comprehensive analysis failed. This is expected as it takes a very long time.');
+                });
         }
     </script>
 </body>
