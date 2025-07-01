@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import linregress
 from datetime import datetime, timedelta
+import time
 import json
 import os
 import sys
@@ -26,7 +27,7 @@ class OpportunityScanner:
         # Dynamic Market Coverage Settings
         self.MIN_VOLUME_USDT = 1000000  # $1M minimum 24h volume
         self.MIN_PRICE = 0.0001  # Minimum price to avoid micro-cap chaos
-        self.MAX_PRICE = 100000  # Maximum price filter
+        self.MAX_PRICE = 150000  # Maximum price filter (increased for BTC)
         self.EXCLUDED_SYMBOLS = ['USDT', 'BUSD', 'USDC', 'DAI', 'TUSD']  # Stablecoins
         
         # Multi-Timeframe Analysis Settings - Professional Confluence System
@@ -54,6 +55,20 @@ class OpportunityScanner:
         self.MIN_TIMEFRAMES_AGREE = 2   # Minimum timeframes that must agree
         self.STRONG_CONFLUENCE_THRESHOLD = 0.8  # 80% for strong signals
         
+        # Caching for curated coin analysis (15-minute refresh)
+        self.curated_cache = {
+            'opportunities': None,
+            'timestamp': None,
+            'cache_duration': 15 * 60  # 15 minutes in seconds
+        }
+        
+        # Ticker data caching (60-second refresh for efficiency)
+        self.ticker_cache = {
+            'data': None,
+            'timestamp': None,
+            'cache_duration': 60  # 60 seconds in seconds
+        }
+        
         # Initialize exchange with comprehensive error handling
         self.exchange = None
         self._initialize_exchange()
@@ -64,7 +79,33 @@ class OpportunityScanner:
         print("🔍 OPPORTUNITY SCANNER INITIALIZED")
         print(f"📊 Dynamic symbol loading from exchange | Market Movers: Available")
         print(f"🎯 Looking for: FVG setups, trendline breaks, patterns, volume spikes")
+        print(f"⏰ Curated 30 coins: Cached for 15 minutes | Extended analysis: 30s throttling")
         print()
+    
+    def _get_cached_tickers(self):
+        """Get cached ticker data or fetch fresh data if cache expired"""
+        current_time = time.time()
+        
+        # Check if cache is valid
+        if (self.ticker_cache['data'] is not None and 
+            self.ticker_cache['timestamp'] is not None and
+            current_time - self.ticker_cache['timestamp'] < self.ticker_cache['cache_duration']):
+            return self.ticker_cache['data']
+        
+        # Cache expired or empty, fetch fresh data
+        try:
+            tickers = self.exchange.fetch_tickers()
+            self.ticker_cache['data'] = tickers
+            self.ticker_cache['timestamp'] = current_time
+            logger.debug(f"Refreshed ticker cache with {len(tickers)} symbols")
+            return tickers
+        except Exception as e:
+            logger.error(f"Error fetching tickers: {e}")
+            # Return cached data if available, even if stale
+            if self.ticker_cache['data'] is not None:
+                logger.warning("Using stale ticker cache due to API error")
+                return self.ticker_cache['data']
+            raise e
     
     def _initialize_exchange(self):
         """Initialize exchange connection with comprehensive error handling"""
@@ -718,8 +759,8 @@ class OpportunityScanner:
         try:
             logger.info(f"Fetching top {limit} {move_type} from the market...")
             
-            # Fetch all tickers
-            tickers = self.exchange.fetch_tickers()
+            # Fetch all tickers (cached for efficiency)
+            tickers = self._get_cached_tickers()
             
             # Filter USDT pairs with sufficient volume
             usdt_pairs = []
@@ -753,10 +794,8 @@ class OpportunityScanner:
             # Get top performers
             top_movers = sorted_pairs[:limit]
             
-            # Log the results
-            logger.info(f"Top {limit} {move_type}:")
-            for i, mover in enumerate(top_movers, 1):
-                logger.info(f"{i}. {mover['symbol']}: {mover['change_24h']:.2f}% (Vol: ${mover['volume_24h']:,.0f})")
+            # Market movers successfully fetched
+            logger.debug(f"Fetched {len(top_movers)} {move_type} successfully")
             
             # Return full market data objects with proper field names for frontend
             return [{
@@ -782,10 +821,185 @@ class OpportunityScanner:
                 'low_24h': 0.0
             } for symbol in ['BTC/USDT', 'ETH/USDT', 'BNB/USDT'][:limit]]
     
+    def fetch_top_market_cap(self, limit=10):
+        """Fetch top coins by actual market capitalization ranking"""
+        try:
+            logger.info(f"Fetching top {limit} coins by market cap...")
+            
+            # Actual top cryptocurrencies by market cap (as of 2024/2025)
+            # This list is based on real market cap rankings and updates slowly
+            TOP_MARKET_CAP_SYMBOLS = [
+                'BTC/USDT',   # #1 - Bitcoin (always #1)
+                'ETH/USDT',   # #2 - Ethereum  
+                'XRP/USDT',   # #3 - XRP
+                'BNB/USDT',   # #4 - Binance Coin
+                'SOL/USDT',   # #5 - Solana
+                'ADA/USDT',   # #6 - Cardano
+                'AVAX/USDT',  # #7 - Avalanche
+                'DOT/USDT',   # #8 - Polkadot
+                'TRX/USDT',   # #9 - TRON
+                'LINK/USDT',  # #10 - Chainlink
+                'MATIC/USDT', # #11 - Polygon
+                'LTC/USDT',   # #12 - Litecoin
+                'UNI/USDT',   # #13 - Uniswap
+                'ATOM/USDT',  # #14 - Cosmos
+                'FIL/USDT'    # #15 - Filecoin
+            ]
+            
+            # Fetch all tickers (cached for efficiency)
+            tickers = self._get_cached_tickers()
+            
+            # Get market data for top market cap coins (in correct order)
+            top_market_cap = []
+            for symbol in TOP_MARKET_CAP_SYMBOLS[:limit]:
+                if symbol in tickers:
+                    ticker = tickers[symbol]
+                    price = ticker.get('last', 0)
+                    percentage = ticker.get('percentage')
+                    
+                    # Price validation for major market cap coins
+                    
+                    # Remove volume filter for major market cap coins - they should always be included!
+                    if (price >= self.MIN_PRICE and 
+                        price <= self.MAX_PRICE and
+                        percentage is not None):
+                        
+                        top_market_cap.append({
+                            'symbol': symbol,
+                            'price': ticker['last'],
+                            'change_24h': ticker.get('percentage', 0),
+                            'volume': ticker.get('quoteVolume', 0),
+                            'high_24h': ticker.get('high', ticker['last']),
+                            'low_24h': ticker.get('low', ticker['last'])
+                        })
+                    else:
+                        logger.debug(f"Filtered out {symbol}: price validation failed")
+                else:
+                    logger.warning(f"Symbol {symbol} not found in tickers")
+            
+            # If we don't have enough coins (due to price filters), fill with remaining from list
+            if len(top_market_cap) < limit:
+                for symbol in TOP_MARKET_CAP_SYMBOLS[limit:]:
+                    if len(top_market_cap) >= limit:
+                        break
+                    if symbol in tickers:
+                        ticker = tickers[symbol]
+                        # Include all available major coins regardless of volume
+                        if (ticker.get('last', 0) >= self.MIN_PRICE and 
+                            ticker.get('last', 0) <= self.MAX_PRICE and
+                            ticker.get('percentage') is not None):
+                            
+                            top_market_cap.append({
+                                'symbol': symbol,
+                                'price': ticker['last'],
+                                'change_24h': ticker.get('percentage', 0),
+                                'volume': ticker.get('quoteVolume', 0),
+                                'high_24h': ticker.get('high', ticker['last']),
+                                'low_24h': ticker.get('low', ticker['last'])
+                            })
+            
+            logger.info(f"Successfully fetched {len(top_market_cap)} market cap coins")
+            if len(top_market_cap) == 0:
+                logger.warning("No market cap coins found - checking ticker availability")
+                available_symbols = [s for s in TOP_MARKET_CAP_SYMBOLS[:5] if s in tickers]
+                logger.debug(f"Available symbols in tickers: {available_symbols}")
+                if available_symbols:
+                    sample_ticker = tickers[available_symbols[0]]
+                    logger.debug(f"Sample ticker data for {available_symbols[0]}: last={sample_ticker.get('last')}, percentage={sample_ticker.get('percentage')}")
+            
+            # Market cap coins successfully fetched
+            logger.debug(f"Fetched {len(top_market_cap)} market cap coins successfully")
+            
+            return top_market_cap
+            
+        except Exception as e:
+            logger.error(f"Error fetching top market cap coins: {e}")
+            print(f"⚠️  Could not fetch market cap data: {e}")
+            print("📋 Falling back to major coins...")
+            # Return major coins as fallback - IN CORRECT MARKET CAP ORDER
+            major_coins = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'BNB/USDT', 'SOL/USDT', 
+                          'ADA/USDT', 'AVAX/USDT', 'DOT/USDT', 'MATIC/USDT', 'LINK/USDT']
+            return [{
+                'symbol': symbol,
+                'price': 0.0,
+                'change_24h': 0.0,
+                'volume': 0,
+                'high_24h': 0.0,
+                'low_24h': 0.0
+            } for symbol in major_coins[:limit]]
+
+    def get_curated_30_coins(self):
+        """Get curated list of 30 coins: 10 gainers + 10 losers + 10 by market cap"""
+        try:
+            logger.info("Fetching curated 30 coin selection...")
+            
+            # Fetch all three categories
+            gainers = self.fetch_market_movers('gainers', 10)
+            losers = self.fetch_market_movers('losers', 10)
+            market_cap = self.fetch_top_market_cap(10)
+            
+            # Extract symbols for deduplication
+            gainer_symbols = {coin['symbol'] for coin in gainers}
+            loser_symbols = {coin['symbol'] for coin in losers}
+            market_cap_symbols = {coin['symbol'] for coin in market_cap}
+            
+            # If there's overlap, fill with additional coins to maintain 30 total
+            all_symbols = gainer_symbols | loser_symbols | market_cap_symbols
+            
+            if len(all_symbols) < 30:
+                # Get additional coins to reach 30
+                additional_needed = 30 - len(all_symbols)
+                try:
+                    all_available = self.get_all_usdt_symbols()
+                    remaining = [s for s in all_available if s not in all_symbols]
+                    import random
+                    random.shuffle(remaining)
+                    additional_coins = remaining[:additional_needed]
+                    
+                    # Add additional coins as market data objects
+                    for symbol in additional_coins:
+                        market_cap.append({
+                            'symbol': symbol,
+                            'price': 0.0,
+                            'change_24h': 0.0,
+                            'volume': 0,
+                            'high_24h': 0.0,
+                            'low_24h': 0.0
+                        })
+                except:
+                    pass
+            
+            # Combine all coins into a single list for analysis
+            curated_coins = []
+            for coin_list in [gainers, losers, market_cap]:
+                for coin in coin_list:
+                    if coin['symbol'] not in [c['symbol'] for c in curated_coins]:
+                        curated_coins.append(coin)
+            
+            logger.info(f"Curated selection complete: {len(curated_coins)} unique coins")
+            return {
+                'gainers': gainers,
+                'losers': losers,
+                'market_cap': market_cap,
+                'all_symbols': [coin['symbol'] for coin in curated_coins]
+            }
+            
+        except Exception as e:
+            logger.error(f"Error creating curated coin selection: {e}")
+            # Fallback to static list
+            static_coins = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'XRP/USDT', 'ADA/USDT', 
+                           'SOL/USDT', 'AVAX/USDT', 'DOT/USDT', 'MATIC/USDT', 'LINK/USDT']
+            return {
+                'gainers': static_coins[:10],
+                'losers': [],
+                'market_cap': [],
+                'all_symbols': static_coins
+            }
+    
     def get_market_mover_summary(self, symbols):
         """Get summary of market movers for display"""
         try:
-            tickers = self.exchange.fetch_tickers()
+            tickers = self._get_cached_tickers()
             summary = []
             
             for symbol in symbols:
@@ -1124,18 +1338,18 @@ class OpportunityScanner:
     
     def analyze_single_coin(self, symbol):
         """Complete multi-timeframe analysis for a single coin - Professional Grade"""
-        print(f"🔍 Analyzing {symbol} across {len(self.TIMEFRAMES)} timeframes...")
+        logger.debug(f"Analyzing {symbol} across {len(self.TIMEFRAMES)} timeframes")
         
         # Fetch multi-timeframe data
         timeframe_data = self.fetch_multi_timeframe_data(symbol)
         
         if not timeframe_data:
-            print(f"❌ No timeframe data available for {symbol} - skipping analysis")
+            logger.warning(f"No timeframe data available for {symbol} - skipping analysis")
             return None
         
         # Check if we have minimum required timeframes
         if len(timeframe_data) < self.MIN_TIMEFRAMES_AGREE:
-            print(f"❌ Insufficient timeframes for {symbol} ({len(timeframe_data)}/{self.MIN_TIMEFRAMES_AGREE} required)")
+            logger.warning(f"Insufficient timeframes for {symbol} ({len(timeframe_data)}/{self.MIN_TIMEFRAMES_AGREE} required)")
             return None
         
         # Get primary timeframe data for main analysis
@@ -1144,10 +1358,10 @@ class OpportunityScanner:
             # Fall back to any available timeframe
             primary_df = next(iter(timeframe_data.values()))
             fallback_tf = next(iter(timeframe_data.keys()))
-            print(f"⚠️  Using {fallback_tf} as fallback timeframe for {symbol}")
+            logger.debug(f"Using {fallback_tf} as fallback timeframe for {symbol}")
         
         # Perform multi-timeframe confluence analysis
-        print(f"📊 Running confluence analysis across {list(timeframe_data.keys())}...")
+        logger.debug(f"Running confluence analysis for {symbol} across {len(timeframe_data)} timeframes")
         multi_timeframe_analysis = self.analyze_timeframe_confluence(symbol, timeframe_data)
         
         # Perform detailed analysis on primary timeframe
@@ -1186,7 +1400,7 @@ class OpportunityScanner:
         else:
             analysis['signal_class'] = 'WEAK'
         
-        print(f"✅ {symbol}: {analysis['signal_class']} {mtf['dominant_direction']} signal (Score: {analysis['score']:.0f})")
+        logger.info(f"Analysis complete: {symbol} - {analysis['signal_class']} {mtf['dominant_direction']} (Score: {analysis['score']:.0f})")
         
         return analysis
     
@@ -1212,14 +1426,44 @@ class OpportunityScanner:
             # Fallback to major pairs if API fails
             return ['BTC/USDT', 'ETH/USDT', 'BNB/USDT']
 
-    def scan_all_opportunities(self, scan_type='static', limit=15):
+    def scan_all_opportunities(self, scan_type='static', limit=15, extended_analysis=False):
         """Scan coins for trading opportunities with dynamic market mover support"""
+        
+        # Check cache for curated_30 analysis (15-minute refresh)
+        if scan_type == 'curated_30':
+            current_time = time.time()
+            if (self.curated_cache['opportunities'] is not None and 
+                self.curated_cache['timestamp'] is not None and
+                current_time - self.curated_cache['timestamp'] < self.curated_cache['cache_duration']):
+                
+                # Cache is valid, return cached results
+                cache_age = int((current_time - self.curated_cache['timestamp']) / 60)
+                logger.info(f"Using cached curated analysis (age: {cache_age}min, valid for {15 - cache_age} more minutes)")
+                logger.debug(f"Found {len(self.curated_cache['opportunities'])} cached opportunities")
+                return self.curated_cache['opportunities']
+            else:
+                logger.info("Refreshing curated 30 analysis (cache expired or empty)")
         
         # Determine which coins to scan
         if scan_type == 'static':
             coins_to_scan = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'XRP/USDT', 'ADA/USDT', 
                            'SOL/USDT', 'AVAX/USDT', 'DOT/USDT', 'MATIC/USDT', 'LINK/USDT']
             scan_description = f"Major Coins ({len(coins_to_scan)} symbols)"
+        elif scan_type == 'curated_30':
+            # NEW: Curated selection of 30 coins (10 gainers + 10 losers + 10 by market cap)
+            curated_data = self.get_curated_30_coins()
+            coins_to_scan = curated_data['all_symbols']
+            scan_description = f"Curated 30 Coins (10 Gainers + 10 Losers + 10 Market Cap Leaders)"
+        elif scan_type == 'extended_all':
+            # NEW: Extended analysis of ALL coins with throttling
+            curated_data = self.get_curated_30_coins()
+            curated_symbols = set(curated_data['all_symbols'])
+            all_symbols = self.get_all_usdt_symbols()
+            
+            # Get remaining coins (exclude curated ones)
+            remaining_coins = [s for s in all_symbols if s not in curated_symbols]
+            coins_to_scan = remaining_coins
+            scan_description = f"Extended Analysis: {len(coins_to_scan)} Additional Coins (Throttled)"
         elif scan_type == 'gainers':
             coins_to_scan = self.fetch_market_movers('gainers', limit)
             scan_description = f"Top {len(coins_to_scan)} Market Gainers (24h)"
@@ -1260,59 +1504,60 @@ class OpportunityScanner:
         else:
             coins_to_scan = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT']
             scan_description = "Default Major Pairs"
-        print(f"🚀 PROFESSIONAL OPPORTUNITY SCANNER - ENHANCED VERSION")
-        print(f"📊 Scanning: {scan_description}")
-        print(f"🎯 Advanced FVG + Pattern Recognition + Multi-Timeframe Confluence")
-        print("=" * 80)
+        logger.info(f"Starting opportunity scan: {scan_description}")
         
-        # Show market mover summary if dynamic scan
-        if scan_type != 'static':
-            print(f"🔥 {scan_description.upper()}:")
+        # Log market mover summary only for extended analysis
+        if scan_type == 'extended_all':
+            logger.info(f"Extended analysis starting: {scan_description}")
             summary = self.get_market_mover_summary(coins_to_scan)
-            for i, mover in enumerate(summary[:10], 1):  # Show top 10 in summary
-                change_emoji = "🚀" if mover['change_24h'] > 0 else "📉"
-                print(f"   {i:2d}. {mover['symbol']:12} {change_emoji} {mover['change_24h']:+6.2f}% (Vol: ${mover['volume_24h']:,.0f})")
-            print("=" * 80)
+            logger.debug(f"Market movers loaded: {len(summary)} coins")
         
         opportunities = []
         failed_count = 0
         
-        for symbol in coins_to_scan:
+        for i, symbol in enumerate(coins_to_scan):
             try:
+                # Log progress for extended analysis (every 10 coins to reduce spam)
+                if scan_type == 'extended_all' and (i + 1) % 10 == 0:
+                    logger.info(f"Extended analysis progress: {i+1}/{len(coins_to_scan)} coins processed, {len(opportunities)} opportunities found")
+                
                 analysis = self.analyze_single_coin(symbol)
                 if analysis:
                     opportunities.append(analysis)
                 else:
                     failed_count += 1
+                    
+                # Apply throttling for extended analysis (30 seconds between coins)
+                if scan_type == 'extended_all' and i < len(coins_to_scan) - 1:  # Don't wait after last coin  
+                    time.sleep(30)  # 30 second delay between coins
+                    
             except Exception as e:
-                print(f"❌ Error analyzing {symbol}: {e}")
+                logger.warning(f"Error analyzing {symbol}: {e}")
                 failed_count += 1
+                
+                # Still apply throttling even on errors to maintain API rate limits
+                if scan_type == 'extended_all' and i < len(coins_to_scan) - 1:
+                    time.sleep(30)
         
         # Check if all symbols failed (critical error)
         if failed_count == len(coins_to_scan):
-            print(f"\n🔴 CRITICAL ERROR: All {len(coins_to_scan)} symbols failed to fetch data")
-            print("   This indicates a serious connectivity or API issue")
-            print("   • Check your internet connection")
-            print("   • Verify VPN settings") 
-            print("   • Check if Binance API is accessible from your location")
-            print("\n🛑 Cannot proceed without market data. Exiting...")
+            logger.critical(f"All {len(coins_to_scan)} symbols failed to fetch data - serious connectivity issue")
+            logger.error("Cannot proceed without market data. Check connection and API access.")
             sys.exit(1)
         
         # Warn if most symbols failed
         failure_rate = failed_count / len(coins_to_scan)
         if failure_rate > 0.5:
-            print(f"\n⚠️  WARNING: {failed_count}/{len(coins_to_scan)} symbols failed ({failure_rate:.1%})")
-            print("   Market data may be unreliable. Consider checking connection.")
+            logger.warning(f"{failed_count}/{len(coins_to_scan)} symbols failed ({failure_rate:.1%}) - market data may be unreliable")
         
         # Filter out neutral opportunities (only show directional moves)
-        print(f"📊 Filtering neutral opportunities...")
         pre_filter_count = len(opportunities)
         opportunities = [opp for opp in opportunities 
                         if opp.get('confluence_quality', {}).get('direction', 'NEUTRAL') in ['BULLISH', 'BEARISH']]
         filtered_count = pre_filter_count - len(opportunities)
         
         if filtered_count > 0:
-            print(f"🔄 Filtered out {filtered_count} neutral opportunities (no clear direction)")
+            logger.debug(f"Filtered out {filtered_count} neutral opportunities (no clear direction)")
         
         # Sort by score (highest first)
         opportunities.sort(key=lambda x: x['score'], reverse=True)
@@ -1326,7 +1571,49 @@ class OpportunityScanner:
                 'opportunities_found': len(opportunities)
             }
         
+        # Update cache for curated_30 analysis
+        if scan_type == 'curated_30':
+            self.curated_cache['opportunities'] = opportunities.copy()
+            self.curated_cache['timestamp'] = time.time()
+            logger.debug(f"Cached curated 30 analysis (valid for 15 minutes)")
+        
         return opportunities
+    
+    def run_comprehensive_analysis(self):
+        """Run comprehensive two-phase analysis: curated 30 first, then all remaining coins"""
+        logger.info("Starting comprehensive market analysis (2-phase)")
+        
+        all_opportunities = []
+        
+        # Phase 1: Analyze curated 30 coins first (no throttling)
+        logger.info("Phase 1: Analyzing curated 30 coins (priority analysis)")
+        curated_opportunities = self.scan_all_opportunities(scan_type='curated_30')
+        all_opportunities.extend(curated_opportunities)
+        
+        logger.info(f"Phase 1 complete: {len(curated_opportunities)} opportunities found from curated coins")
+        if curated_opportunities:
+            top_5 = curated_opportunities[:5]
+            logger.info(f"Top curated opportunities: {', '.join([f'{opp['symbol']}({opp['score']:.0f})' for opp in top_5])}")
+        
+        # Phase 2: Analyze all remaining coins with throttling
+        logger.info("Phase 2: Extended analysis starting (throttled - may take hours)")
+        logger.warning("Extended analysis will take a long time due to API rate limiting (30s between coins)")
+        
+        try:
+            extended_opportunities = self.scan_all_opportunities(scan_type='extended_all')
+            all_opportunities.extend(extended_opportunities)
+            
+            logger.info(f"Phase 2 complete: {len(extended_opportunities)} additional opportunities found")
+            logger.info(f"Total analysis: {len(all_opportunities)} opportunities from {len(curated_opportunities) + len(extended_opportunities)} coins")
+            
+        except KeyboardInterrupt:
+            logger.warning("Phase 2 interrupted by user")
+            logger.info(f"Using Phase 1 results only: {len(curated_opportunities)} opportunities")
+        
+        # Sort all opportunities by score
+        all_opportunities.sort(key=lambda x: x['score'], reverse=True)
+        
+        return all_opportunities
     
     def display_top_opportunities(self, opportunities, top_n=10):
         """Enhanced display with advanced FVG and pattern information"""

@@ -570,12 +570,66 @@ def get_market_movers():
 
 @app.route('/api/opportunities')
 def get_opportunities():
-    """API endpoint for opportunity scanner results"""
+    """API endpoint for opportunity scanner results - now uses curated 30 coins"""
     try:
-        opportunities = dashboard.scanner.scan_all_opportunities('all_coins', limit=25)
+        opportunities = dashboard.scanner.scan_all_opportunities('curated_30', limit=30)
         return jsonify(opportunities)
     except Exception as e:
         print(f"Error scanning opportunities: {e}")
+        return jsonify([])
+
+@app.route('/api/extended_analysis')
+def get_extended_analysis():
+    """API endpoint for extended analysis of all remaining coins (throttled)"""
+    try:
+        # This will take a very long time due to throttling
+        opportunities = dashboard.scanner.scan_all_opportunities(scan_type='extended_all')
+        return jsonify(opportunities[:50])  # Limit to top 50 for web display
+    except Exception as e:
+        print(f"Error in extended analysis: {e}")
+        return jsonify([])
+
+@app.route('/api/comprehensive_analysis')
+def get_comprehensive_analysis():
+    """API endpoint for comprehensive analysis (curated 30 + extended analysis)"""
+    try:
+        # This will run both phases
+        all_opportunities = dashboard.scanner.run_comprehensive_analysis()
+        return jsonify(all_opportunities[:50])  # Limit to top 50 for web display
+    except Exception as e:
+        print(f"Error in comprehensive analysis: {e}")
+        return jsonify([])
+
+@app.route('/api/analysis_status')
+def get_analysis_status():
+    """API endpoint to get status of current analysis operations"""
+    try:
+        # Get analysis statistics
+        curated_data = dashboard.scanner.get_curated_30_coins()
+        all_symbols = dashboard.scanner.get_all_usdt_symbols()
+        remaining_count = len(all_symbols) - len(curated_data['all_symbols'])
+        
+        return jsonify({
+            "curated_coins": len(curated_data['all_symbols']),
+            "remaining_coins": remaining_count,
+            "total_coins": len(all_symbols),
+            "estimated_extended_time_hours": round(remaining_count * 30 / 3600, 1),  # 30 seconds per coin
+            "estimated_extended_time_minutes": round(remaining_count * 30 / 60, 0),
+            "throttle_delay_seconds": 30,
+            "status": "ready"
+        })
+    except Exception as e:
+        print(f"Error getting analysis status: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/top_market_cap')
+def get_top_market_cap():
+    """API endpoint for top market cap coins"""
+    try:
+        market_cap_coins = dashboard.scanner.fetch_top_market_cap(limit=10)
+        return jsonify(market_cap_coins)
+    except Exception as e:
+        print(f"Error fetching market cap coins: {e}")
         return jsonify([])
 
 @app.route('/api/all_symbols')
