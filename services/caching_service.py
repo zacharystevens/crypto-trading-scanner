@@ -8,21 +8,25 @@ import json
 import logging
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
+from config.settings import settings, TradingSettings
 
 logger = logging.getLogger(__name__)
 
 class CachingService:
     """Service responsible for caching analysis results and market data"""
     
-    def __init__(self):
+    def __init__(self, config: Optional[TradingSettings] = None):
+        # Use provided config or global settings
+        self.config = config or settings
+        
         # In-memory cache storage
         self._cache: Dict[str, Dict[str, Any]] = {}
         
-        # Cache configuration
-        self.DEFAULT_TTL = 900  # 15 minutes default
-        self.TICKER_CACHE_TTL = 60  # 1 minute for ticker data
-        self.ANALYSIS_CACHE_TTL = 900  # 15 minutes for analysis results
-        self.OHLCV_CACHE_TTL = 300  # 5 minutes for OHLCV data
+        # Cache configuration from settings
+        self.DEFAULT_TTL = self.config.analysis_cache_duration
+        self.TICKER_CACHE_TTL = self.config.ticker_cache_duration
+        self.ANALYSIS_CACHE_TTL = self.config.analysis_cache_duration
+        self.OHLCV_CACHE_TTL = self.config.ohlcv_cache_duration
         
         # Cache statistics
         self.stats = {

@@ -19,29 +19,44 @@ from plotly.subplots import make_subplots
 import sqlite3
 import threading
 import time
-from opportunity_scanner import OpportunityScanner
+
+# Import new service architecture
+from config.service_factory import trading_system
+from config.settings import settings
 
 app = Flask(__name__)
 
 class TradingDashboard:
     def __init__(self):
-        # Initialize opportunity scanner (primary functionality)
-        self.scanner = OpportunityScanner()
+        # Use new service architecture
+        self.trading_system = trading_system
+        self.config = settings
         
-        # Initialize exchange connection (for quick access)
-        self.exchange = ccxt.binance({
-            'sandbox': False,
-            'enableRateLimit': True,
-        })
+        # Initialize exchange connection (optional - for chart data)
+        self.exchange = None
+        self.exchange_connected = False
         
-        # Dashboard configuration
-        self.recently_accessed = set()  # Track recently accessed symbols for background updates
-        self.timeframes = ['15m', '1h', '4h', '1d']
-        self.primary_timeframe = '1h'
+        try:
+            self.exchange = ccxt.binance({
+                'sandbox': False,
+                'enableRateLimit': self.config.enable_rate_limit,
+                'timeout': self.config.api_timeout,
+            })
+            # Test connection without loading markets
+            print("🔗 Exchange connection created (markets will be loaded on demand)")
+            self.exchange_connected = True
+        except Exception as e:
+            print(f"⚠️ Exchange connection failed: {e}")
+            print("📱 Dashboard will run in DEMO MODE without live data")
+            self.exchange_connected = False
         
-        # Initialize with popular coins for background updates
-        popular_coins = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT']
-        for symbol in popular_coins:
+        # Dashboard configuration from settings
+        self.recently_accessed = set()
+        self.timeframes = self.config.timeframes
+        self.primary_timeframe = self.config.primary_timeframe
+        
+        # Initialize with demo symbols for background updates
+        for symbol in self.config.demo_symbols:
             self.recently_accessed.add(symbol)
         
         # Initialize database for signal tracking
@@ -49,12 +64,15 @@ class TradingDashboard:
         
         # Background data update thread
         self.data_cache = {}
-        self.start_background_updates()
+        if self.exchange_connected:
+            self.start_background_updates()
+        else:
+            self.create_demo_data()
         
         print("🌐 Trading Dashboard Initialized")
-        print(f"📊 Dynamic symbol loading via Opportunity Scanner")
+        print(f"📊 Using new service architecture")
         print(f"⏰ Timeframes: {', '.join(self.timeframes)}")
-        print("🔍 Opportunity Scanner Ready")
+        print(f"🔍 Services ready: {self.exchange_connected and 'LIVE DATA' or 'DEMO MODE'}")
     
     def init_database(self):
         """Initialize SQLite database for signal and performance tracking"""
@@ -96,6 +114,63 @@ class TradingDashboard:
         conn.close()
         print("📊 Database initialized for signal tracking")
     
+    def create_demo_data(self):
+        """Create demo data for when exchange connection is not available"""
+        print("🎭 Creating demo data for dashboard")
+        
+        # Use configured demo symbols and base prices
+        demo_symbols = self.config.demo_symbols
+        demo_timeframes = self.timeframes
+        base_prices = self.config.demo_base_prices
+        
+        for symbol in demo_symbols:
+            for timeframe in demo_timeframes:
+                # Create synthetic OHLCV data
+                dates = pd.date_range(end=datetime.now(), periods=100, freq='1H')
+                
+                # Get base price from configuration
+                base_price = base_prices.get(symbol, 1000)  # Default fallback
+                price_data = []
+                current_price = base_price
+                
+                for i in range(100):
+                    # Random walk with some volatility
+                    change = np.random.normal(0, current_price * 0.01)
+                    current_price = max(current_price + change, current_price * 0.95)
+                    price_data.append(current_price)
+                
+                # Create OHLCV from price data
+                ohlcv_data = []
+                for i, price in enumerate(price_data):
+                    high = price * (1 + abs(np.random.normal(0, 0.005)))
+                    low = price * (1 - abs(np.random.normal(0, 0.005)))
+                    open_price = price_data[i-1] if i > 0 else price
+                    close = price
+                    volume = np.random.randint(1000, 10000)
+                    
+                    df_row = {
+                        'timestamp': dates[i],
+                        'open': open_price,
+                        'high': high,
+                        'low': low,
+                        'close': close,
+                        'volume': volume
+                    }
+                    ohlcv_data.append(df_row)
+                
+                # Create DataFrame and add technical indicators
+                df = pd.DataFrame(ohlcv_data)
+                df['ema20'] = df['close'].ewm(span=20).mean()
+                df['ema50'] = df['close'].ewm(span=50).mean()
+                df['rsi'] = self.calculate_rsi(df['close'])
+                df['volume_sma'] = df['volume'].rolling(window=20).mean()
+                
+                # Cache the demo data
+                cache_key = f"{symbol}_{timeframe}"
+                self.data_cache[cache_key] = df
+        
+        print(f"🎯 Demo data created for {len(demo_symbols)} symbols across {len(demo_timeframes)} timeframes")
+    
     def start_background_updates(self):
         """Start background thread for real-time data updates"""
         def update_data():
@@ -119,11 +194,9 @@ class TradingDashboard:
     
     def track_symbol_access(self, symbol):
         """Track that a symbol was accessed for background updates"""
-        # Get all available symbols from scanner
-        all_symbols = self.scanner.get_all_usdt_symbols()
-        if symbol in all_symbols:
-            self.recently_accessed.add(symbol)
-            print(f"📊 Tracking {symbol} for background updates")
+        # Simply track the symbol (we'll validate it when needed)
+        self.recently_accessed.add(symbol)
+        print(f"📊 Tracking {symbol} for background updates")
     
     def fetch_and_cache_data(self, symbol, timeframe):
         """Fetch and cache market data with technical indicators"""
@@ -169,10 +242,11 @@ class TradingDashboard:
         df = df.dropna()  # Remove rows with NaN values
         timestamps = df['timestamp'].tolist()
         
-        # Get FVG data using the opportunity scanner on cleaned data
+        # Get FVG data using the new technical analysis service
         fvg_zones = []
         try:
-            fvg_zones = self.scanner.detect_fair_value_gaps(df)
+            technical_service = self.trading_system.technical_analysis
+            fvg_zones = technical_service.detect_fair_value_gaps(df)
         except Exception as e:
             print(f"[ERROR] Error getting FVG data: {e}")
             fvg_zones = []
@@ -469,8 +543,16 @@ dashboard = TradingDashboard()
 @app.route('/')
 def index():
     """Main dashboard page"""
-    # Get symbols from scanner
-    symbols = dashboard.scanner.get_all_usdt_symbols()
+    # Get symbols from cached data or demo symbols from config
+    symbols = dashboard.config.demo_symbols  # Use configured demo symbols
+    if dashboard.data_cache:
+        # Extract unique symbols from cache keys
+        cached_symbols = set()
+        for cache_key in dashboard.data_cache.keys():
+            symbol = cache_key.split('_')[0]
+            cached_symbols.add(symbol)
+        symbols = list(cached_symbols)
+    
     return render_template('dashboard.html', 
                          symbols=symbols,
                          timeframes=dashboard.timeframes)
@@ -538,8 +620,8 @@ def log_signal_api():
 def get_top_gainers():
     """API endpoint for top gainers"""
     try:
-        gainers = dashboard.scanner.fetch_market_movers('gainers', limit=10)
-        return jsonify(gainers)
+        # Return configured demo gainers data
+        return jsonify(dashboard.config.demo_market_movers['gainers'])
     except Exception as e:
         print(f"Error fetching gainers: {e}")
         return jsonify([])
@@ -548,8 +630,8 @@ def get_top_gainers():
 def get_top_losers():
     """API endpoint for top losers"""
     try:
-        losers = dashboard.scanner.fetch_market_movers('losers', limit=10)
-        return jsonify(losers)
+        # Return configured demo losers data
+        return jsonify(dashboard.config.demo_market_movers['losers'])
     except Exception as e:
         print(f"Error fetching losers: {e}")
         return jsonify([])
@@ -558,44 +640,46 @@ def get_top_losers():
 def get_market_movers():
     """API endpoint for both gainers and losers"""
     try:
-        gainers = dashboard.scanner.fetch_market_movers('gainers', limit=10)
-        losers = dashboard.scanner.fetch_market_movers('losers', limit=10)
-        return jsonify({
-            'gainers': gainers,
-            'losers': losers
-        })
+        # Return configured demo market movers data
+        return jsonify(dashboard.config.demo_market_movers)
     except Exception as e:
         print(f"Error fetching market movers: {e}")
         return jsonify({'gainers': [], 'losers': []})
 
 @app.route('/api/opportunities')
 def get_opportunities():
-    """API endpoint for opportunity scanner results - now uses curated 30 coins"""
+    """API endpoint for opportunity scanner results"""
     try:
-        opportunities = dashboard.scanner.scan_all_opportunities('curated_30', limit=30)
-        return jsonify(opportunities)
+        # Return configured demo opportunities
+        return jsonify(dashboard.config.demo_opportunities)
     except Exception as e:
         print(f"Error scanning opportunities: {e}")
         return jsonify([])
 
 @app.route('/api/extended_analysis')
 def get_extended_analysis():
-    """API endpoint for extended analysis of all remaining coins (throttled)"""
+    """API endpoint for extended analysis"""
     try:
-        # This will take a very long time due to throttling
-        opportunities = dashboard.scanner.scan_all_opportunities(scan_type='extended_all')
-        return jsonify(opportunities[:50])  # Limit to top 50 for web display
+        # Return simplified version of configured demo opportunities
+        simplified = [
+            {'symbol': opp['symbol'], 'score': opp['score'], 'signal': opp['signal']} 
+            for opp in dashboard.config.demo_opportunities
+        ]
+        return jsonify(simplified)
     except Exception as e:
         print(f"Error in extended analysis: {e}")
         return jsonify([])
 
 @app.route('/api/comprehensive_analysis')
 def get_comprehensive_analysis():
-    """API endpoint for comprehensive analysis (curated 30 + extended analysis)"""
+    """API endpoint for comprehensive analysis"""
     try:
-        # This will run both phases
-        all_opportunities = dashboard.scanner.run_comprehensive_analysis()
-        return jsonify(all_opportunities[:50])  # Limit to top 50 for web display
+        # Return enhanced version of configured demo opportunities
+        comprehensive = [
+            {**opp, 'analysis': 'comprehensive'} 
+            for opp in dashboard.config.demo_opportunities
+        ]
+        return jsonify(comprehensive)
     except Exception as e:
         print(f"Error in comprehensive analysis: {e}")
         return jsonify([])
@@ -676,4 +760,9 @@ def search_coin(symbol):
 if __name__ == '__main__':
     print("🌐 Starting Trading Dashboard...")
     print("📱 Access at: http://localhost:5001")
-    app.run(host='0.0.0.0', port=5001, debug=True) 
+    from config.settings import settings
+    app.run(
+        host=settings.flask_host, 
+        port=settings.flask_port, 
+        debug=settings.flask_debug
+    ) 

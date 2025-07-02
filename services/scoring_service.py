@@ -6,26 +6,24 @@ ScoringService - Handles opportunity scoring and ranking algorithms
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from config.settings import settings, TradingSettings
 
 logger = logging.getLogger(__name__)
 
 class ScoringService:
     """Service responsible for scoring and ranking trading opportunities"""
     
-    def __init__(self):
-        # Scoring weights for different factors
-        self.SCORING_WEIGHTS = {
-            'fvg': 0.25,          # Fair Value Gap strength
-            'trendline': 0.20,    # Trendline confluence  
-            'volume': 0.15,       # Volume analysis
-            'patterns': 0.20,     # Chart patterns
-            'confluence': 0.20    # Multi-timeframe confluence
-        }
+    def __init__(self, config: Optional[TradingSettings] = None):
+        # Use provided config or global settings
+        self.config = config or settings
         
-        # Score thresholds
-        self.MIN_SCORE_THRESHOLD = 30  # Minimum score to consider
-        self.STRONG_SIGNAL_THRESHOLD = 70  # Strong signal threshold
-        self.EXCELLENT_SIGNAL_THRESHOLD = 85  # Excellent signal threshold
+        # Scoring weights from configuration
+        self.SCORING_WEIGHTS = self.config.scoring_weights
+        
+        # Score thresholds from configuration
+        self.MIN_SCORE_THRESHOLD = self.config.min_score_threshold
+        self.STRONG_SIGNAL_THRESHOLD = self.config.strong_signal_threshold
+        self.EXCELLENT_SIGNAL_THRESHOLD = self.config.excellent_signal_threshold
     
     def score_opportunity(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
         """Score a trading opportunity based on comprehensive analysis"""

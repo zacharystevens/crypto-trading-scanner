@@ -3,52 +3,65 @@
 MarketDataService - Handles all market data fetching and caching operations
 """
 
-import ccxt
+import asyncio
 import pandas as pd
 import time
 import logging
 from typing import Dict, List, Any, Optional
+from config.settings import settings, TradingSettings
+from .exchange_factory import ExchangeFactory
+from .exchange_interface import ExchangeInterface
 
 logger = logging.getLogger(__name__)
 
 class MarketDataService:
     """Service responsible for fetching and caching market data from exchanges"""
     
-    def __init__(self, exchange_config: Optional[Dict] = None):
-        # Market filtering settings
-        self.MIN_VOLUME_USDT = 1000000
-        self.MIN_PRICE = 0.0001
-        self.MAX_PRICE = 150000
-        self.EXCLUDED_SYMBOLS = ['USDT', 'BUSD', 'USDC', 'DAI', 'TUSD']
+    def __init__(self, exchange_config: Optional[Dict] = None, config: Optional[TradingSettings] = None):
+        # Use provided config or global settings
+        self.config = config or settings
         
-        # Ticker data caching
+        # Market filtering settings from configuration
+        self.MIN_VOLUME_USDT = self.config.min_volume_usdt
+        self.MIN_PRICE = self.config.min_price
+        self.MAX_PRICE = self.config.max_price
+        self.EXCLUDED_SYMBOLS = self.config.excluded_symbols
+        
+        # Ticker data caching from configuration
         self.ticker_cache = {
             'data': None,
             'timestamp': None,
-            'cache_duration': 60
+            'cache_duration': self.config.ticker_cache_duration
         }
         
-        # Initialize exchange
-        self.exchange = None
-        self._initialize_exchange(exchange_config)
+        # Initialize exchange using factory
+        self.exchange: Optional[ExchangeInterface] = None
+        asyncio.create_task(self._initialize_exchange(exchange_config))
     
-    def _initialize_exchange(self, config: Optional[Dict] = None):
+    async def _initialize_exchange(self, config: Optional[Dict] = None):
         """Initialize exchange connection"""
         try:
-            exchange_config = config or {
-                'sandbox': False,
-                'enableRateLimit': True,
-                'timeout': 10000,
-            }
+            # Use provided config or get from global settings
+            if config:
+                exchange_config = config
+            else:
+                exchange_config = self.config.get_exchange_config()
             
-            self.exchange = ccxt.binance(exchange_config)
-            self.exchange.load_markets()
-            logger.info("Successfully connected to Binance exchange")
+            # Create exchange using factory
+            self.exchange = ExchangeFactory.create_from_settings(exchange_config)
+            
+            # Connect to the exchange
+            connected = await self.exchange.connect()
+            if not connected:
+                raise ConnectionError("Failed to establish exchange connection")
+            
+            logger.info(f"Successfully connected to {self.exchange.exchange_type.value} exchange")
         except Exception as e:
             logger.error(f"Failed to connect to exchange: {e}")
+            self.exchange = None
             raise ConnectionError(f"Exchange connection failed: {e}")
     
-    def _get_cached_tickers(self):
+    async def _get_cached_tickers(self):
         """Get cached ticker data or fetch fresh data if cache expired"""
         current_time = time.time()
         
@@ -60,11 +73,24 @@ class MarketDataService:
         
         # Cache expired or empty, fetch fresh data
         try:
-            tickers = self.exchange.fetch_tickers()
-            self.ticker_cache['data'] = tickers
+            if not self.exchange or not self.exchange.is_connected:
+                raise ConnectionError("Exchange not connected")
+                
+            tickers = await self.exchange.get_tickers()
+            # Convert to dict format for compatibility
+            tickers_dict = {ticker.symbol: {
+                'last': ticker.price,
+                'percentage': ticker.change_24h,
+                'quoteVolume': ticker.volume_24h,
+                'high': ticker.high_24h,
+                'low': ticker.low_24h,
+                'timestamp': ticker.timestamp
+            } for ticker in tickers}
+            
+            self.ticker_cache['data'] = tickers_dict
             self.ticker_cache['timestamp'] = current_time
-            logger.debug(f"Refreshed ticker cache with {len(tickers)} symbols")
-            return tickers
+            logger.debug(f"Refreshed ticker cache with {len(tickers_dict)} symbols")
+            return tickers_dict
         except Exception as e:
             logger.error(f"Error fetching tickers: {e}")
             # Return cached data if available, even if stale
@@ -73,20 +99,32 @@ class MarketDataService:
                 return self.ticker_cache['data']
             raise e
 
-    def fetch_ohlcv_data(self, symbol: str, timeframe: str, limit: int = 100) -> Optional[pd.DataFrame]:
+    async def fetch_ohlcv_data(self, symbol: str, timeframe: str, limit: int = 100) -> Optional[pd.DataFrame]:
         """Fetch OHLCV data with error handling"""
-        if not self.exchange:
+        if not self.exchange or not self.exchange.is_connected:
             logger.error(f"No exchange connection available for {symbol}")
             return None
         
         try:
-            ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+            ohlcv_data = await self.exchange.get_ohlcv(symbol, timeframe, limit)
             
-            if not ohlcv or len(ohlcv) < 10:
+            if not ohlcv_data or len(ohlcv_data) < 10:
                 logger.warning(f"Insufficient data returned for {symbol} {timeframe}")
                 return None
             
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            # Convert OHLCV objects to DataFrame
+            data_rows = []
+            for candle in ohlcv_data:
+                data_rows.append([
+                    candle.timestamp,
+                    candle.open,
+                    candle.high,
+                    candle.low,
+                    candle.close,
+                    candle.volume
+                ])
+            
+            df = pd.DataFrame(data_rows, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             
             # Data validation
@@ -100,13 +138,13 @@ class MarketDataService:
             logger.error(f"Error fetching {symbol} {timeframe}: {e}")
             return None
     
-    def fetch_market_movers(self, move_type: str = 'gainers', limit: int = 10) -> List[Dict[str, Any]]:
+    async def fetch_market_movers(self, move_type: str = 'gainers', limit: int = 10) -> List[Dict[str, Any]]:
         """Fetch top market gainers or losers dynamically"""
         try:
             logger.info(f"Fetching top {limit} {move_type} from the market...")
             
             # Fetch all tickers (cached for efficiency)
-            tickers = self._get_cached_tickers()
+            tickers = await self._get_cached_tickers()
             
             # Filter USDT pairs with sufficient volume
             usdt_pairs = []
@@ -164,7 +202,7 @@ class MarketDataService:
                 'low_24h': 0.0
             } for symbol in ['BTC/USDT', 'ETH/USDT', 'BNB/USDT'][:limit]]
     
-    def fetch_top_market_cap(self, limit: int = 10) -> List[Dict[str, Any]]:
+    async def fetch_top_market_cap(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Fetch top coins by actual market capitalization ranking"""
         try:
             logger.info(f"Fetching top {limit} coins by market cap...")
@@ -189,7 +227,7 @@ class MarketDataService:
             ]
             
             # Fetch all tickers (cached for efficiency)
-            tickers = self._get_cached_tickers()
+            tickers = await self._get_cached_tickers()
             
             # Get market data for top market cap coins (in correct order)
             top_market_cap = []
@@ -234,10 +272,13 @@ class MarketDataService:
                 'low_24h': 0.0
             } for symbol in major_coins[:limit]]
     
-    def get_all_usdt_symbols(self) -> List[str]:
+    async def get_all_usdt_symbols(self) -> List[str]:
         """Get all available USDT trading pairs from exchange"""
         try:
-            markets = self.exchange.fetch_markets()
+            if not self.exchange or not self.exchange.is_connected:
+                raise ConnectionError("Exchange not connected")
+                
+            markets = await self.exchange.get_markets()
             usdt_symbols = []
             
             for market in markets:
@@ -256,15 +297,15 @@ class MarketDataService:
             # Fallback to major pairs if API fails
             return ['BTC/USDT', 'ETH/USDT', 'BNB/USDT']
     
-    def get_curated_30_coins(self) -> Dict[str, Any]:
+    async def get_curated_30_coins(self) -> Dict[str, Any]:
         """Get curated list of 30 coins: 10 gainers + 10 losers + 10 by market cap"""
         try:
             logger.info("Fetching curated 30 coin selection...")
             
             # Fetch all three categories
-            gainers = self.fetch_market_movers('gainers', 10)
-            losers = self.fetch_market_movers('losers', 10)
-            market_cap = self.fetch_top_market_cap(10)
+            gainers = await self.fetch_market_movers('gainers', 10)
+            losers = await self.fetch_market_movers('losers', 10)
+            market_cap = await self.fetch_top_market_cap(10)
             
             # Extract symbols for deduplication
             gainer_symbols = {coin['symbol'] for coin in gainers}

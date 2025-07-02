@@ -8,22 +8,26 @@ import pandas as pd
 from scipy.stats import linregress
 import logging
 from typing import Dict, List, Any, Optional
+from config.settings import settings, TradingSettings
 
 logger = logging.getLogger(__name__)
 
 class TechnicalAnalysisService:
     """Service responsible for technical analysis operations"""
     
-    def __init__(self):
-        # Advanced FVG Detection Settings
-        self.FVG_THRESHOLD = 0.005  # 0.5% minimum gap threshold
-        self.FVG_PROXIMITY = 0.02   # 2% proximity for alerts
-        self.FVG_VOLUME_CONFIRM = 1.5  # Volume confirmation threshold
-        self.FVG_MAX_AGE = 50  # Maximum candles to track unfilled gaps
+    def __init__(self, config: Optional[TradingSettings] = None):
+        # Use provided config or global settings
+        self.config = config or settings
         
-        # Pattern Recognition Settings
-        self.PATTERN_TOLERANCE = 0.01  # 1% tolerance for pattern matching
-        self.MIN_PATTERN_PERIODS = 5   # Minimum periods for pattern formation
+        # Advanced FVG Detection Settings from configuration
+        self.FVG_THRESHOLD = self.config.fvg_threshold
+        self.FVG_PROXIMITY = self.config.fvg_proximity
+        self.FVG_VOLUME_CONFIRM = self.config.fvg_volume_confirm
+        self.FVG_MAX_AGE = self.config.fvg_max_age
+        
+        # Pattern Recognition Settings from configuration
+        self.PATTERN_TOLERANCE = self.config.pattern_tolerance
+        self.MIN_PATTERN_PERIODS = self.config.min_pattern_periods
     
     def detect_fair_value_gaps(self, df: pd.DataFrame) -> List[Dict[str, Any]]:
         """Advanced Fair Value Gap Detection"""

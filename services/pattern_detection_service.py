@@ -7,26 +7,25 @@ import numpy as np
 import pandas as pd
 import logging
 from typing import Dict, List, Any, Optional
+from config.settings import settings, TradingSettings
 
 logger = logging.getLogger(__name__)
 
 class PatternDetectionService:
     """Service responsible for detecting chart patterns and formations"""
     
-    def __init__(self):
-        # Pattern Recognition Settings
-        self.PATTERN_TOLERANCE = 0.01  # 1% tolerance for pattern matching
-        self.MIN_PATTERN_PERIODS = 5   # Minimum periods for pattern formation
-        self.CONFLUENCE_THRESHOLD = 0.6  # 60% agreement required
+    def __init__(self, config: Optional[TradingSettings] = None):
+        # Use provided config or global settings
+        self.config = config or settings
         
-        # Multi-timeframe settings
-        self.TIMEFRAMES = ['15m', '1h', '4h', '1d']
-        self.TIMEFRAME_WEIGHTS = {
-            '1d': 0.35,
-            '4h': 0.30,
-            '1h': 0.25,
-            '15m': 0.10
-        }
+        # Pattern Recognition Settings from configuration
+        self.PATTERN_TOLERANCE = self.config.pattern_tolerance
+        self.MIN_PATTERN_PERIODS = self.config.min_pattern_periods
+        self.CONFLUENCE_THRESHOLD = self.config.confluence_threshold
+        
+        # Multi-timeframe settings from configuration
+        self.TIMEFRAMES = self.config.timeframes
+        self.TIMEFRAME_WEIGHTS = self.config.timeframe_weights
     
     def analyze_timeframe_confluence(self, symbol: str, timeframe_data: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
         """Analyze confluence across multiple timeframes"""
