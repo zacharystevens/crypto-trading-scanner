@@ -94,7 +94,28 @@ class OpportunityScanner:
         
         # Cache expired or empty, fetch fresh data
         try:
-            tickers = self.exchange.fetch_tickers()
+            # Use our new async exchange interface
+            import asyncio
+            
+            async def fetch_tickers():
+                return await self.exchange.get_tickers()
+            
+            # Run async call
+            tickers_data = asyncio.run(fetch_tickers())
+            
+            # Convert to format expected by the rest of the code
+            tickers = {}
+            for ticker in tickers_data:
+                tickers[ticker.symbol] = {
+                    'symbol': ticker.symbol,
+                    'last': ticker.price,
+                    'percentage': ticker.change_24h,
+                    'quoteVolume': ticker.volume_24h,
+                    'high': ticker.high_24h,
+                    'low': ticker.low_24h,
+                    'timestamp': ticker.timestamp
+                }
+            
             self.ticker_cache['data'] = tickers
             self.ticker_cache['timestamp'] = current_time
             logger.debug(f"Refreshed ticker cache with {len(tickers)} symbols")
@@ -108,22 +129,42 @@ class OpportunityScanner:
             raise e
     
     def _initialize_exchange(self):
-        """Initialize exchange connection with comprehensive error handling"""
+        """Initialize exchange connection using our new exchange interface"""
         try:
-            self.exchange = ccxt.binance({
-                'sandbox': False,
-                'enableRateLimit': True,
-                'timeout': 10000,
-            })
-            # Test connection
-            self.exchange.load_markets()
-            print("✅ Exchange connected: Binance")
-            logger.info("Successfully connected to Binance exchange")
+            # Import our new exchange architecture
+            from services.exchange_factory import ExchangeFactory
+            from config.settings import settings
+            
+            # Get exchange configuration from settings
+            exchange_config = settings.get_exchange_config()
+            
+            # Create exchange using our factory
+            self.exchange = ExchangeFactory.create_from_settings(exchange_config)
+            
+            # Test connection asynchronously
+            import asyncio
+            async def test_connection():
+                try:
+                    await self.exchange.connect()
+                    return True
+                except Exception as e:
+                    logger.error(f"Exchange connection test failed: {e}")
+                    return False
+            
+            # Run the connection test
+            connected = asyncio.run(test_connection())
+            
+            if connected:
+                print(f"✅ Exchange connected: {exchange_config['exchange_type']}")
+                logger.info(f"Successfully connected to {exchange_config['exchange_type']} exchange")
+            else:
+                raise Exception("Connection test failed")
+                
         except Exception as e:
             error_type = type(e).__name__
             logger.error(f"Failed to connect to exchange: {error_type}: {e}")
             print(f"❌ CRITICAL ERROR: Exchange connection failed: {error_type}")
-            print(f"   Check your internet connection and VPN settings")
+            print(f"   Check your internet connection and exchange settings")
             print(f"🔴 Cannot operate without market data connection. Exiting...")
             sys.exit(1)
     
@@ -142,7 +183,7 @@ class OpportunityScanner:
                 print(f"⚠️  Warning: Could not create {directory}")
     
     def fetch_ohlcv_data(self, symbol, timeframe, limit=100):
-        """Fetch OHLCV data with comprehensive error handling"""
+        """Fetch OHLCV data with comprehensive error handling using our new exchange interface"""
         if not self.exchange:
             logger.error(f"No exchange connection available for {symbol}")
             print(f"❌ No exchange connection - cannot fetch {symbol}")
@@ -153,14 +194,32 @@ class OpportunityScanner:
             if not symbol or not timeframe or limit <= 0:
                 raise ValueError(f"Invalid parameters: symbol={symbol}, timeframe={timeframe}, limit={limit}")
             
-            ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+            # Use our new async exchange interface
+            import asyncio
             
-            if not ohlcv or len(ohlcv) < 10:
+            async def fetch_data():
+                return await self.exchange.get_ohlcv(symbol, timeframe, limit=limit)
+            
+            # Run async call
+            ohlcv_data = asyncio.run(fetch_data())
+            
+            if not ohlcv_data or len(ohlcv_data) < 10:
                 logger.warning(f"Insufficient data returned for {symbol} {timeframe}")
                 return None
             
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            # Convert our OHLCV objects to DataFrame
+            df_data = []
+            for ohlcv in ohlcv_data:
+                df_data.append({
+                    'timestamp': pd.to_datetime(ohlcv.timestamp, unit='ms'),
+                    'open': ohlcv.open,
+                    'high': ohlcv.high,
+                    'low': ohlcv.low,
+                    'close': ohlcv.close,
+                    'volume': ohlcv.volume
+                })
+            
+            df = pd.DataFrame(df_data)
             
             # Validate data integrity
             if df.isnull().any().any():
@@ -1405,23 +1464,35 @@ class OpportunityScanner:
         return analysis
     
     def get_all_usdt_symbols(self):
-        """Get all available USDT trading pairs from exchange"""
+        """Get all available USDT trading pairs from exchange using our new interface"""
         try:
-            markets = self.exchange.fetch_markets()
-            usdt_symbols = []
+            # Use our new async exchange interface to get tickers
+            import asyncio
             
-            for market in markets:
-                if (market['quote'] == 'USDT' and 
-                    market['active'] and 
-                    market['spot'] and
-                    market['base'] not in self.EXCLUDED_SYMBOLS):
-                    usdt_symbols.append(market['symbol'])
+            async def fetch_symbols():
+                return await self.exchange.get_tickers()
+            
+            # Run async call
+            tickers = asyncio.run(fetch_symbols())
+            
+            usdt_symbols = []
+            for ticker in tickers:
+                # Extract base currency from symbol (e.g., BTC/USDT -> BTC)
+                if ticker.symbol.endswith('/USDT'):
+                    base = ticker.symbol.replace('/USDT', '')
+                    if (base not in self.EXCLUDED_SYMBOLS and 
+                        ticker.price >= self.MIN_PRICE and 
+                        ticker.price <= self.MAX_PRICE and
+                        ticker.volume_24h >= self.MIN_VOLUME_USDT):
+                        usdt_symbols.append(ticker.symbol)
             
             usdt_symbols.sort()
             print(f"📈 Found {len(usdt_symbols)} USDT trading pairs")
+            logger.info(f"Loaded {len(usdt_symbols)} USDT symbols from exchange")
             return usdt_symbols
             
         except Exception as e:
+            logger.error(f"Error fetching all symbols: {e}")
             print(f"❌ Error fetching all symbols: {e}")
             # Fallback to major pairs if API fails
             return ['BTC/USDT', 'ETH/USDT', 'BNB/USDT']
