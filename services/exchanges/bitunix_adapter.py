@@ -12,12 +12,10 @@ import requests
 import pandas as pd
 
 from ..exchange_interface import ExchangeInterface, ExchangeConfig, ExchangeType, Ticker, OHLCV
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../open-api/Demo/Python'))
-from open_api_http_future_public import OpenApiHttpFuturePublic
-from open_api_http_future_private import OpenApiHttpFuturePrivate
-from config import Config as BitunixConfig
+# Import Bitunix API modules from local copy
+from .bitunix_api.open_api_http_future_public import OpenApiHttpFuturePublic
+from .bitunix_api.open_api_http_future_private import OpenApiHttpFuturePrivate
+from .bitunix_api.config import Config as BitunixConfig
 
 logger = logging.getLogger(__name__)
 
@@ -82,14 +80,23 @@ class BitunixAdapter(ExchangeInterface):
             ticker_data = response if isinstance(response, list) else [response]
             
             for ticker in ticker_data:
+                # Parse Bitunix ticker format
+                open_price = float(ticker.get('open', 0))
+                last_price = float(ticker.get('lastPrice', ticker.get('last', 0)))
+                
+                # Calculate 24h change percentage
+                change_24h = 0.0
+                if open_price > 0:
+                    change_24h = ((last_price - open_price) / open_price) * 100
+                
                 tickers.append(Ticker(
                     symbol=self._format_symbol_to_standard(ticker.get('symbol', '')),
-                    price=float(ticker.get('close', 0)),
-                    change_24h=float(ticker.get('priceChangePercent', 0)),
-                    volume_24h=float(ticker.get('volume', 0)),
+                    price=last_price,
+                    change_24h=change_24h,
+                    volume_24h=float(ticker.get('baseVol', ticker.get('quoteVol', 0))),
                     high_24h=float(ticker.get('high', 0)),
                     low_24h=float(ticker.get('low', 0)),
-                    timestamp=int(ticker.get('timestamp', time.time() * 1000))
+                    timestamp=int(time.time() * 1000)  # Use current time as Bitunix doesn't provide timestamp
                 ))
             
             return tickers
@@ -120,14 +127,26 @@ class BitunixAdapter(ExchangeInterface):
             kline_data = response.get('data', []) if isinstance(response, dict) else response
             
             for kline in kline_data:
-                ohlcv_data.append(OHLCV(
-                    timestamp=int(kline[0]),  # timestamp
-                    open=float(kline[1]),     # open
-                    high=float(kline[2]),     # high
-                    low=float(kline[3]),      # low
-                    close=float(kline[4]),    # close
-                    volume=float(kline[5])    # volume
-                ))
+                # Handle Bitunix kline format (dict format, not array)
+                if isinstance(kline, dict):
+                    ohlcv_data.append(OHLCV(
+                        timestamp=int(kline.get('time', 0)),
+                        open=float(kline.get('open', 0)),
+                        high=float(kline.get('high', 0)),
+                        low=float(kline.get('low', 0)),
+                        close=float(kline.get('close', 0)),
+                        volume=float(kline.get('baseVol', kline.get('quoteVol', 0)))
+                    ))
+                else:
+                    # Fallback to array format
+                    ohlcv_data.append(OHLCV(
+                        timestamp=int(kline[0]),  # timestamp
+                        open=float(kline[1]),     # open
+                        high=float(kline[2]),     # high
+                        low=float(kline[3]),      # low
+                        close=float(kline[4]),    # close
+                        volume=float(kline[5])    # volume
+                    ))
             
             return ohlcv_data
             
@@ -190,8 +209,10 @@ class BitunixAdapter(ExchangeInterface):
     
     def _create_bitunix_config(self) -> BitunixConfig:
         """Create Bitunix config from our ExchangeConfig"""
-        # Create a temporary config file data
-        config_data = {
+        # Create BitunixConfig object directly without file loading
+        config = BitunixConfig.__new__(BitunixConfig)
+        config.config_path = None  # No file needed
+        config.config_data = {
             'credentials': {
                 'api_key': self.config.api_key,
                 'secret_key': self.config.secret_key
@@ -206,11 +227,7 @@ class BitunixAdapter(ExchangeInterface):
             }
         }
         
-        # Create BitunixConfig with our data
-        bitunix_config = BitunixConfig()
-        bitunix_config.config_data = config_data
-        
-        return bitunix_config
+        return config
     
     async def _test_connection(self) -> None:
         """Test connection to exchange"""

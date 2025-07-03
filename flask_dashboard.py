@@ -32,28 +32,59 @@ class TradingDashboard:
         self.trading_system = trading_system
         self.config = settings
         
-        # Initialize exchange connection (optional - for chart data)
+        # Initialize exchange connection using our new architecture
         self.exchange = None
         self.exchange_connected = False
         
         try:
-            self.exchange = ccxt.binance({
-                'sandbox': False,
-                'enableRateLimit': self.config.enable_rate_limit,
-                'timeout': self.config.api_timeout,
-            })
-            # Test connection without loading markets
-            print("🔗 Exchange connection created (markets will be loaded on demand)")
-            self.exchange_connected = True
+            # Import our exchange factory
+            from services.exchange_factory import ExchangeFactory
+            
+            # Get exchange configuration from settings
+            exchange_config = self.config.get_exchange_config()
+            print(f"🔗 Initializing {exchange_config['exchange_type']} exchange...")
+            
+            # Create exchange using our factory
+            self.exchange = ExchangeFactory.create_from_settings(exchange_config)
+            
+            # Test connection asynchronously
+            import asyncio
+            async def test_connection():
+                try:
+                    await self.exchange.connect()
+                    return True
+                except Exception as e:
+                    print(f"⚠️ Exchange connection failed: {e}")
+                    return False
+            
+            # Run the connection test
+            self.exchange_connected = asyncio.run(test_connection())
+            
+            if self.exchange_connected:
+                print(f"✅ Successfully connected to {exchange_config['exchange_type']} exchange")
+            else:
+                print("📱 Dashboard will run in DEMO MODE without live data")
+                self.exchange = None
+                
         except Exception as e:
-            print(f"⚠️ Exchange connection failed: {e}")
+            print(f"⚠️ Exchange initialization failed: {e}")
             print("📱 Dashboard will run in DEMO MODE without live data")
             self.exchange_connected = False
+            self.exchange = None
         
         # Dashboard configuration from settings
         self.recently_accessed = set()
         self.timeframes = self.config.timeframes
         self.primary_timeframe = self.config.primary_timeframe
+        
+        # Initialize scanner with our new exchange interface
+        try:
+            from opportunity_scanner import OpportunityScanner
+            self.scanner = OpportunityScanner()
+            print("🔍 Scanner initialized successfully")
+        except Exception as e:
+            print(f"⚠️ Scanner initialization failed: {e}")
+            self.scanner = None
         
         # Initialize with demo symbols for background updates
         for symbol in self.config.demo_symbols:
@@ -201,10 +232,28 @@ class TradingDashboard:
     def fetch_and_cache_data(self, symbol, timeframe):
         """Fetch and cache market data with technical indicators"""
         try:
-            ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, limit=100)
+            # Use our new async exchange interface
+            import asyncio
             
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            async def fetch_data():
+                return await self.exchange.get_ohlcv(symbol, timeframe, limit=100)
+            
+            # Run async call
+            ohlcv_data = asyncio.run(fetch_data())
+            
+            # Convert our OHLCV objects to DataFrame
+            df_data = []
+            for ohlcv in ohlcv_data:
+                df_data.append({
+                    'timestamp': pd.to_datetime(ohlcv.timestamp, unit='ms'),
+                    'open': ohlcv.open,
+                    'high': ohlcv.high,
+                    'low': ohlcv.low,
+                    'close': ohlcv.close,
+                    'volume': ohlcv.volume
+                })
+            
+            df = pd.DataFrame(df_data)
             
             # Calculate technical indicators
             df['ema20'] = df['close'].ewm(span=20).mean()
@@ -618,40 +667,53 @@ def log_signal_api():
 
 @app.route('/api/top_gainers')
 def get_top_gainers():
-    """API endpoint for top gainers"""
+    """API endpoint for top gainers using live Bitunix data"""
     try:
-        # Return configured demo gainers data
-        return jsonify(dashboard.config.demo_market_movers['gainers'])
+        if not dashboard.scanner:
+            return jsonify([])
+        # Get live gainers from Bitunix
+        gainers = dashboard.scanner.fetch_market_movers('gainers', 10)
+        return jsonify(gainers)
     except Exception as e:
         print(f"Error fetching gainers: {e}")
         return jsonify([])
 
 @app.route('/api/top_losers')
 def get_top_losers():
-    """API endpoint for top losers"""
+    """API endpoint for top losers using live Bitunix data"""
     try:
-        # Return configured demo losers data
-        return jsonify(dashboard.config.demo_market_movers['losers'])
+        if not dashboard.scanner:
+            return jsonify([])
+        # Get live losers from Bitunix
+        losers = dashboard.scanner.fetch_market_movers('losers', 10)
+        return jsonify(losers)
     except Exception as e:
         print(f"Error fetching losers: {e}")
         return jsonify([])
 
 @app.route('/api/market_movers')
 def get_market_movers():
-    """API endpoint for both gainers and losers"""
+    """API endpoint for both gainers and losers using live Bitunix data"""
     try:
-        # Return configured demo market movers data
-        return jsonify(dashboard.config.demo_market_movers)
+        if not dashboard.scanner:
+            return jsonify({'gainers': [], 'losers': []})
+        # Get live market movers from Bitunix
+        gainers = dashboard.scanner.fetch_market_movers('gainers', 10)
+        losers = dashboard.scanner.fetch_market_movers('losers', 10)
+        return jsonify({'gainers': gainers, 'losers': losers})
     except Exception as e:
         print(f"Error fetching market movers: {e}")
         return jsonify({'gainers': [], 'losers': []})
 
 @app.route('/api/opportunities')
 def get_opportunities():
-    """API endpoint for opportunity scanner results"""
+    """API endpoint for opportunity scanner results using live Bitunix data"""
     try:
-        # Return configured demo opportunities
-        return jsonify(dashboard.config.demo_opportunities)
+        if not dashboard.scanner:
+            return jsonify([])
+        # Get live opportunities from Bitunix (curated 30 coins analysis)
+        opportunities = dashboard.scanner.scan_all_opportunities('curated_30', limit=30)
+        return jsonify(opportunities)
     except Exception as e:
         print(f"Error scanning opportunities: {e}")
         return jsonify([])
@@ -688,6 +750,18 @@ def get_comprehensive_analysis():
 def get_analysis_status():
     """API endpoint to get status of current analysis operations"""
     try:
+        # Check if scanner is available
+        if not dashboard.scanner:
+            return jsonify({
+                "curated_coins": 0,
+                "remaining_coins": 0,
+                "total_coins": 0,
+                "estimated_extended_time_hours": 0,
+                "estimated_extended_time_minutes": 0,
+                "throttle_delay_seconds": 30,
+                "status": "scanner_unavailable"
+            })
+        
         # Get analysis statistics
         curated_data = dashboard.scanner.get_curated_30_coins()
         all_symbols = dashboard.scanner.get_all_usdt_symbols()
@@ -710,6 +784,8 @@ def get_analysis_status():
 def get_top_market_cap():
     """API endpoint for top market cap coins"""
     try:
+        if not dashboard.scanner:
+            return jsonify([])
         market_cap_coins = dashboard.scanner.fetch_top_market_cap(limit=10)
         return jsonify(market_cap_coins)
     except Exception as e:
@@ -720,6 +796,21 @@ def get_top_market_cap():
 def get_all_symbols():
     """API endpoint to get all available trading pairs"""
     try:
+        # Check if scanner is available
+        if not dashboard.scanner:
+            # Return demo symbols if scanner is unavailable
+            demo_symbols = dashboard.config.demo_symbols
+            usdt_pairs = []
+            for symbol in demo_symbols:
+                base = symbol.replace('/USDT', '')
+                symbol_info = {
+                    'symbol': symbol,
+                    'base': base,
+                    'display': base  # Just the base asset for display
+                }
+                usdt_pairs.append(symbol_info)
+            return jsonify(usdt_pairs)
+        
         # Use the scanner's method to get all symbols
         symbols = dashboard.scanner.get_all_usdt_symbols()
         
@@ -750,6 +841,10 @@ def search_coin(symbol):
         
         # Track that this symbol was accessed
         dashboard.track_symbol_access(symbol)
+        
+        # Check if scanner is available
+        if not dashboard.scanner:
+            return jsonify({'error': 'Scanner unavailable', 'symbol': symbol})
         
         analysis = dashboard.scanner.analyze_single_coin(symbol)
         return jsonify(analysis)
