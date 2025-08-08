@@ -16,6 +16,11 @@ class TradingSettings(BaseSettings):
     # ============================================================================
     # MARKET DATA CONFIGURATION
     # ============================================================================
+    max_coins_limit: int = Field(
+        default=20, 
+        description="Maximum number of coins to scan (1-100)",
+        ge=1, le=100
+    )
     min_volume_usdt: float = Field(
         default=1000000, 
         description="Minimum 24h volume in USDT to consider a trading pair",

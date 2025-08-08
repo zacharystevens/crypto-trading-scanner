@@ -79,7 +79,7 @@ class OpportunityScanner:
         print("🔍 OPPORTUNITY SCANNER INITIALIZED")
         print(f"📊 Dynamic symbol loading from exchange | Market Movers: Available")
         print(f"🎯 Looking for: FVG setups, trendline breaks, patterns, volume spikes")
-        print(f"⏰ Curated 30 coins: Cached for 15 minutes | Extended analysis: 30s throttling")
+        print(f"⏰ Curated 50 coins: Cached for 15 minutes | Extended analysis: 30s throttling")
         print()
     
     def _get_cached_tickers(self):
@@ -987,27 +987,36 @@ class OpportunityScanner:
                 'low_24h': 0.0
             } for symbol in major_coins[:limit]]
 
-    def get_curated_30_coins(self):
-        """Get curated list of 30 coins: 10 gainers + 10 losers + 10 by market cap"""
+    def get_curated_100_coins(self):
+        """Get curated list of coins based on configuration limit"""
         try:
-            logger.info("Fetching curated 30 coin selection...")
+            # Get the configured coin limit from settings - always get fresh value
+            from config.settings import settings
+            max_coins = settings.max_coins_limit
+            
+            logger.info(f"Fetching curated {max_coins} coin selection...")
+            
+            # Calculate distribution based on limit
+            gainers_count = max_coins // 2
+            losers_count = max_coins // 2
+            market_cap_count = max_coins - gainers_count - losers_count
             
             # Fetch all three categories
-            gainers = self.fetch_market_movers('gainers', 10)
-            losers = self.fetch_market_movers('losers', 10)
-            market_cap = self.fetch_top_market_cap(10)
+            gainers = self.fetch_market_movers('gainers', gainers_count)
+            losers = self.fetch_market_movers('losers', losers_count)
+            market_cap = self.fetch_top_market_cap(market_cap_count)
             
             # Extract symbols for deduplication
             gainer_symbols = {coin['symbol'] for coin in gainers}
             loser_symbols = {coin['symbol'] for coin in losers}
             market_cap_symbols = {coin['symbol'] for coin in market_cap}
             
-            # If there's overlap, fill with additional coins to maintain 30 total
+            # If there's overlap, fill with additional coins to maintain configured total
             all_symbols = gainer_symbols | loser_symbols | market_cap_symbols
             
-            if len(all_symbols) < 30:
-                # Get additional coins to reach 30
-                additional_needed = 30 - len(all_symbols)
+            if len(all_symbols) < max_coins:
+                # Get additional coins to reach configured limit
+                additional_needed = max_coins - len(all_symbols)
                 try:
                     all_available = self.get_all_usdt_symbols()
                     remaining = [s for s in all_available if s not in all_symbols]
@@ -1497,7 +1506,7 @@ class OpportunityScanner:
             # Fallback to major pairs if API fails
             return ['BTC/USDT', 'ETH/USDT', 'BNB/USDT']
 
-    def scan_all_opportunities(self, scan_type='static', limit=15, extended_analysis=False):
+    def scan_all_opportunities(self, scan_type='static', limit=50, extended_analysis=False):
         """Scan coins for trading opportunities with dynamic market mover support"""
         
         # Check cache for curated_30 analysis (15-minute refresh)
@@ -1513,7 +1522,7 @@ class OpportunityScanner:
                 logger.debug(f"Found {len(self.curated_cache['opportunities'])} cached opportunities")
                 return self.curated_cache['opportunities']
             else:
-                logger.info("Refreshing curated 30 analysis (cache expired or empty)")
+                logger.info("Refreshing curated 50 analysis (cache expired or empty)")
         
         # Determine which coins to scan
         if scan_type == 'static':
@@ -1521,13 +1530,15 @@ class OpportunityScanner:
                            'SOL/USDT', 'AVAX/USDT', 'DOT/USDT', 'MATIC/USDT', 'LINK/USDT']
             scan_description = f"Major Coins ({len(coins_to_scan)} symbols)"
         elif scan_type == 'curated_30':
-            # NEW: Curated selection of 30 coins (10 gainers + 10 losers + 10 by market cap)
-            curated_data = self.get_curated_30_coins()
+            # NEW: Curated selection based on configured limit
+            curated_data = self.get_curated_100_coins()
             coins_to_scan = curated_data['all_symbols']
-            scan_description = f"Curated 30 Coins (10 Gainers + 10 Losers + 10 Market Cap Leaders)"
+            from config.settings import settings
+            max_coins = settings.max_coins_limit
+            scan_description = f"Curated {max_coins} Coins (Gainers + Losers + Market Cap Leaders)"
         elif scan_type == 'extended_all':
             # NEW: Extended analysis of ALL coins with throttling
-            curated_data = self.get_curated_30_coins()
+            curated_data = self.get_curated_100_coins()
             curated_symbols = set(curated_data['all_symbols'])
             all_symbols = self.get_all_usdt_symbols()
             
@@ -1664,7 +1675,8 @@ class OpportunityScanner:
         logger.info(f"Phase 1 complete: {len(curated_opportunities)} opportunities found from curated coins")
         if curated_opportunities:
             top_5 = curated_opportunities[:5]
-            logger.info(f"Top curated opportunities: {', '.join([f'{opp['symbol']}({opp['score']:.0f})' for opp in top_5])}")
+            top_opportunities = [f"{opp['symbol']}({opp['score']:.0f})" for opp in top_5]
+            logger.info(f"Top curated opportunities: {', '.join(top_opportunities)}")
         
         # Phase 2: Analyze all remaining coins with throttling
         logger.info("Phase 2: Extended analysis starting (throttled - may take hours)")

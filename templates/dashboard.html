@@ -371,6 +371,117 @@
             overflow: visible;
         }
         
+        /* Enhanced Alerts Scrolling */
+        .alerts-scroll-container {
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-color) var(--card-bg);
+        }
+        
+        .alerts-scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .alerts-scroll-container::-webkit-scrollbar-track {
+            background: var(--card-bg);
+            border-radius: 4px;
+        }
+        
+        .alerts-scroll-container::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 4px;
+        }
+        
+        .alerts-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: var(--success-color);
+        }
+        
+        .scroll-controls {
+            z-index: 10;
+        }
+        
+        .scroll-controls .btn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border-radius: 50%;
+            margin: 2px 0;
+            opacity: 0.8;
+            transition: all 0.2s ease;
+        }
+        
+        .scroll-controls .btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
+        .alert-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border-left: 4px solid;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .alert-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .alert-item.bullish {
+            border-left-color: var(--success-color);
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(0,255,136,0.05) 100%);
+        }
+        
+        .alert-item.bearish {
+            border-left-color: var(--danger-color);
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(255,71,87,0.05) 100%);
+        }
+        
+        .alert-symbol {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .alert-direction {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .alert-direction.bullish {
+            background: var(--success-color);
+            color: #000;
+        }
+        
+        .alert-direction.bearish {
+            background: var(--danger-color);
+            color: #fff;
+        }
+        
+        .alert-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            margin: 8px 0;
+        }
+        
+        .alert-stat {
+            font-size: 0.85rem;
+        }
+        
+        .alert-stat-label {
+            color: var(--text-light);
+            opacity: 0.7;
+        }
+        
+        .alert-time {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
         .timeframes-display {
             display: flex;
             gap: 6px;
@@ -443,6 +554,98 @@
             border-left: 4px solid #17a2b8 !important;
             background: linear-gradient(135deg, var(--card-bg) 0%, rgba(23,162,184,0.05) 100%) !important;
         }
+
+        /* Timeframe selector styling */
+        .timeframe-selector select {
+            background: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.9rem;
+        }
+
+        .timeframe-selector select:focus {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--text-light);
+            box-shadow: 0 0 0 0.2rem rgba(15, 52, 96, 0.25);
+        }
+
+        .timeframe-selector select option {
+            background: var(--secondary-color);
+            color: var(--text-light);
+        }
+
+        /* Alert Styles */
+        .alert-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .alert-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .alert-item.bullish {
+            border-left: 4px solid var(--success-color);
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(0,255,136,0.1) 100%);
+        }
+
+        .alert-item.bearish {
+            border-left: 4px solid var(--danger-color);
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(255,71,87,0.1) 100%);
+        }
+
+        .alert-symbol {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .alert-direction {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .alert-direction.bullish {
+            background: var(--success-color);
+            color: #000;
+        }
+
+        .alert-direction.bearish {
+            background: var(--danger-color);
+            color: #fff;
+        }
+
+        .alert-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            margin: 8px 0;
+        }
+
+        .alert-stat {
+            font-size: 0.8rem;
+        }
+
+        .alert-stat-label {
+            color: var(--text-light);
+            opacity: 0.7;
+        }
+
+        .alert-time {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            opacity: 0.6;
+        }
     </style>
 </head>
 <body>
@@ -459,6 +662,10 @@
                     <i class="fas fa-clock me-1"></i>
                     <span id="current-time"></span>
                 </span>
+                <button class="btn btn-outline-light btn-sm me-2" id="audio-toggle-btn" onclick="toggleAudio()">
+                    <i class="fas fa-volume-up me-1"></i>
+                    <span id="audio-status">ON</span>
+                </button>
                 <button class="btn btn-outline-light btn-sm" onclick="refreshAllData()">
                     <i class="fas fa-sync-alt me-1"></i>
                     Refresh
@@ -487,7 +694,13 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="d-flex gap-2 justify-content-end">
+                <div class="d-flex gap-2 justify-content-end align-items-center">
+                    <div class="d-flex align-items-center me-3">
+                        <label class="text-light me-2 small">Max Coins:</label>
+                        <input type="number" id="coin-limit-input" class="form-control form-control-sm" 
+                               style="width: 70px;" min="1" max="100" value="20" 
+                               onchange="updateCoinLimit()">
+                    </div>
                     <button class="btn btn-success btn-sm" onclick="runFullScan()">
                         <i class="fas fa-search me-1"></i>Full Scan
                     </button>
@@ -617,7 +830,7 @@
                 </div>
 
                 <!-- Best Opportunities - Narrower -->
-                <div class="card">
+                <div class="card mb-3">
                     <div class="card-header py-2">
                         <h6 class="mb-0">
                             <i class="fas fa-bullseye me-2"></i>
@@ -629,6 +842,47 @@
                             <div class="loading">
                                 <i class="fas fa-spinner fa-spin"></i>
                                 <small class="ms-2">Analyzing...</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Alerts Box -->
+                <div class="card">
+                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="fas fa-bell text-warning me-2"></i>
+                            🚨 Live Alerts
+                        </h6>
+                        <button class="btn btn-sm btn-outline-light" onclick="clearAllAlerts()" title="Clear All Alerts">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body py-2">
+                        <div class="alerts-scroll-container" style="max-height: 300px; overflow-y: auto; position: relative;">
+                            <div id="alerts-container">
+                                <div class="text-center text-muted py-3">
+                                    <i class="fas fa-bell-slash fa-2x mb-2"></i>
+                                    <p class="mb-0">No alerts yet</p>
+                                    <small>EMA50/EMA100 crossovers will appear here</small>
+                                </div>
+                            </div>
+                            <!-- Scroll Controls -->
+                            <div class="scroll-controls" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: none;">
+                                <button class="btn btn-sm btn-outline-light scroll-up" onclick="scrollAlerts('up')" title="Scroll Up (Ctrl+↑)">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                                <br>
+                                <button class="btn btn-sm btn-outline-light scroll-down" onclick="scrollAlerts('down')" title="Scroll Down (Ctrl+↓)">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Scroll Indicator -->
+                            <div class="scroll-indicator" style="position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); display: none;">
+                                <small class="text-muted">
+                                    <i class="fas fa-mouse"></i> Scroll or use Ctrl+↑/↓
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -669,12 +923,21 @@
 
                 <!-- Selected Coin Chart -->
                 <div class="card">
-                    <div class="card-header py-2">
+                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">
                             <i class="fas fa-chart-area me-2"></i>
                             Chart Analysis
                             <span class="badge bg-primary ms-2" id="current-symbol">Select a coin</span>
                         </h6>
+                        <div class="timeframe-selector">
+                            <select class="form-select form-select-sm" id="timeframe-selector" style="width: auto; min-width: 80px;">
+                                <option value="5m">5m</option>
+                                <option value="15m">15m</option>
+                                <option value="30m">30m</option>
+                                <option value="1h" selected>1h</option>
+                                <option value="4h">4h</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="card-body p-2">
                         <div class="chart-container" id="chart-container">
@@ -724,6 +987,9 @@
             
             // Set up autocomplete for search
             setupAutocomplete();
+            
+            // Set up timeframe selector
+            setupTimeframeSelector();
         }
 
         function loadAllSymbols() {
@@ -736,6 +1002,25 @@
                 .catch(error => {
                     console.error('Error loading symbols:', error);
                 });
+        }
+
+        function setupTimeframeSelector() {
+            const timeframeSelector = document.getElementById('timeframe-selector');
+            
+            // Set initial value to 1h (default)
+            timeframeSelector.value = currentTimeframe;
+            
+            // Add change event listener
+            timeframeSelector.addEventListener('change', function() {
+                const newTimeframe = this.value;
+                console.log(`Timeframe changed from ${currentTimeframe} to ${newTimeframe}`);
+                currentTimeframe = newTimeframe;
+                
+                // Reload chart if a symbol is selected
+                if (selectedSymbol && !isLoadingChart) {
+                    loadChart(selectedSymbol);
+                }
+            });
         }
 
         function setupAutocomplete() {
@@ -1129,6 +1414,11 @@
             loadChart(symbol);
         }
 
+        function updateChartTitle(symbol, timeframe) {
+            const titleElement = document.getElementById('current-symbol');
+            titleElement.textContent = `${symbol.replace('/USDT', '')} - ${timeframe}`;
+        }
+
         function loadChart(symbol) {
             // Prevent multiple simultaneous chart loading requests
             if (isLoadingChart) {
@@ -1137,6 +1427,9 @@
             
             isLoadingChart = true;
             const container = document.getElementById('chart-container');
+            
+            // Update chart title with current timeframe
+            updateChartTitle(symbol, currentTimeframe);
             
             // Force clear any existing content and show spinner
             container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Loading chart...</p></div>';
@@ -1412,6 +1705,54 @@
             document.getElementById('analysis-status-row').style.display = 'none';
         }
 
+        function updateCoinLimit() {
+            const input = document.getElementById('coin-limit-input');
+            const newLimit = parseInt(input.value);
+            
+            if (newLimit < 1 || newLimit > 100) {
+                alert('Coin limit must be between 1 and 100');
+                input.value = 20; // Reset to default
+                return;
+            }
+            
+            fetch('/api/coin_limit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({limit: newLimit})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(`Coin limit updated to ${newLimit}`);
+                    // Refresh opportunities with new limit after a short delay
+                    setTimeout(() => {
+                        loadOpportunities();
+                    }, 500);
+                } else {
+                    alert(`Error: ${data.error}`);
+                    input.value = 20; // Reset on error
+                }
+            })
+            .catch(error => {
+                console.error('Error updating coin limit:', error);
+                alert('Failed to update coin limit');
+                input.value = 20; // Reset on error
+            });
+        }
+
+        function loadCoinLimit() {
+            fetch('/api/coin_limit')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('coin-limit-input').value = data.limit;
+            })
+            .catch(error => {
+                console.error('Error loading coin limit:', error);
+            });
+        }
+
         function runComprehensiveAnalysis() {
             // This would run both curated 30 + extended analysis
             // Show status section
@@ -1436,6 +1777,270 @@
                     alert('Comprehensive analysis failed. This is expected as it takes a very long time.');
                 });
         }
+
+        // Audio Toggle Function
+        function toggleAudio() {
+            fetch('/api/audio/toggle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const audioStatus = document.getElementById('audio-status');
+                const audioBtn = document.getElementById('audio-toggle-btn');
+                const icon = audioBtn.querySelector('i');
+                
+                if (data.audio_enabled) {
+                    audioStatus.textContent = 'ON';
+                    icon.className = 'fas fa-volume-up me-1';
+                    audioBtn.classList.remove('btn-outline-danger');
+                    audioBtn.classList.add('btn-outline-light');
+                } else {
+                    audioStatus.textContent = 'OFF';
+                    icon.className = 'fas fa-volume-mute me-1';
+                    audioBtn.classList.remove('btn-outline-light');
+                    audioBtn.classList.add('btn-outline-danger');
+                }
+                
+                console.log('Audio status:', data.message);
+            })
+            .catch(error => {
+                console.error('Error toggling audio:', error);
+                alert('Failed to toggle audio alerts');
+            });
+        }
+
+        // Load initial audio status
+        function loadAudioStatus() {
+            fetch('/api/audio/status')
+            .then(response => response.json())
+            .then(data => {
+                const audioStatus = document.getElementById('audio-status');
+                const audioBtn = document.getElementById('audio-toggle-btn');
+                const icon = audioBtn.querySelector('i');
+                
+                if (data.audio_enabled) {
+                    audioStatus.textContent = 'ON';
+                    icon.className = 'fas fa-volume-up me-1';
+                    audioBtn.classList.remove('btn-outline-danger');
+                    audioBtn.classList.add('btn-outline-light');
+                } else {
+                    audioStatus.textContent = 'OFF';
+                    icon.className = 'fas fa-volume-mute me-1';
+                    audioBtn.classList.remove('btn-outline-light');
+                    audioBtn.classList.add('btn-outline-danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading audio status:', error);
+            });
+        }
+
+        // Alert Functions
+        function startAlertPolling() {
+            // Poll for new alerts every 5 seconds
+            setInterval(() => {
+                fetch('/api/alerts/latest')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.alertId) {
+                            // Check if this alert is already displayed
+                            const existingAlert = document.querySelector(`[data-alert-id="${data.alertId}"]`);
+                            if (!existingAlert) {
+                                addAlertToContainer(data);
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error polling alerts:', error);
+                    });
+            }, 5000);
+        }
+
+        function addAlertToContainer(alertData) {
+            const alertsContainer = document.getElementById('alerts-container');
+            
+            // Remove "no alerts" message if present
+            const noAlertsMessage = alertsContainer.querySelector('.text-center.text-muted');
+            if (noAlertsMessage) {
+                noAlertsMessage.remove();
+            }
+            
+            // Create alert item HTML
+            const alertTime = new Date(alertData.timestamp);
+            const timeString = alertTime.toLocaleTimeString();
+            const dateString = alertTime.toLocaleDateString();
+            
+            const alertHtml = `
+                <div class="alert-item ${alertData.direction === 'LONG' ? 'bullish' : 'bearish'}" data-alert-id="${alertData.alertId}" onclick="selectCoin('${alertData.symbol}')">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="alert-symbol me-2">${alertData.symbol.replace('/USDT', '')}</span>
+                                <span class="alert-direction ${alertData.direction === 'LONG' ? 'bullish' : 'bearish'}">${alertData.direction}</span>
+                                <span class="alert-time ms-auto">${timeString}</span>
+                            </div>
+                            <div class="alert-stats">
+                                <div class="alert-stat">
+                                    <span class="alert-stat-label">Price:</span> $${parseFloat(alertData.price).toFixed(4)}
+                                </div>
+                                <div class="alert-stat">
+                                    <span class="alert-stat-label">RSI:</span> ${alertData.rsi.toFixed(1)}
+                                </div>
+                                <div class="alert-stat">
+                                    <span class="alert-stat-label">Vol:</span> ${alertData.volume_ratio.toFixed(1)}x
+                                </div>
+                                <div class="alert-stat">
+                                    <span class="alert-stat-label">Conf:</span> ${alertData.confidence.toFixed(0)}%
+                                </div>
+                            </div>
+                            <div class="alert-time mt-1">
+                                ${dateString} • ${alertData.timeframe} timeframe
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add new alert at the top
+            alertsContainer.insertAdjacentHTML('afterbegin', alertHtml);
+            
+            // Limit to 10 alerts
+            const alerts = alertsContainer.querySelectorAll('.alert-item');
+            if (alerts.length > 10) {
+                alerts[alerts.length - 1].remove();
+            }
+        }
+
+        function clearAllAlerts() {
+            const alertsContainer = document.getElementById('alerts-container');
+            alertsContainer.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-bell-slash fa-2x mb-2"></i>
+                    <p class="mb-0">No alerts yet</p>
+                    <small>EMA50/EMA100 crossovers will appear here</small>
+                </div>
+            `;
+            updateScrollControls();
+        }
+        
+        function scrollAlerts(direction) {
+            const scrollContainer = document.querySelector('.alerts-scroll-container');
+            const scrollAmount = 100; // Scroll by 100px
+            
+            if (direction === 'up') {
+                scrollContainer.scrollTop -= scrollAmount;
+            } else {
+                scrollContainer.scrollTop += scrollAmount;
+            }
+        }
+        
+        function updateScrollControls() {
+            const scrollContainer = document.querySelector('.alerts-scroll-container');
+            const scrollControls = document.querySelector('.scroll-controls');
+            const scrollIndicator = document.querySelector('.scroll-indicator');
+            const alerts = document.querySelectorAll('.alert-item');
+            
+            // Show scroll controls only if there are alerts and content is scrollable
+            if (alerts.length > 0 && scrollContainer.scrollHeight > scrollContainer.clientHeight) {
+                scrollControls.style.display = 'block';
+                scrollIndicator.style.display = 'block';
+            } else {
+                scrollControls.style.display = 'none';
+                scrollIndicator.style.display = 'none';
+            }
+        }
+        
+        // Enhanced addAlertToContainer function with scroll controls
+        function addAlertToContainer(alertData) {
+            const alertsContainer = document.getElementById('alerts-container');
+            
+            // Remove "no alerts" message if present
+            const noAlertsMessage = alertsContainer.querySelector('.text-center.text-muted');
+            if (noAlertsMessage) {
+                noAlertsMessage.remove();
+            }
+            
+            // Create alert item HTML
+            const alertTime = new Date(alertData.timestamp);
+            const timeString = alertTime.toLocaleTimeString();
+            const dateString = alertTime.toLocaleDateString();
+            
+            const alertHtml = `
+                <div class="alert-item ${alertData.direction === 'LONG' ? 'bullish' : 'bearish'}" data-alert-id="${alertData.alertId}" onclick="selectCoin('${alertData.symbol}')">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="alert-symbol me-2">${alertData.symbol.replace('/USDT', '')}</span>
+                                <span class="alert-direction ${alertData.direction === 'LONG' ? 'bullish' : 'bearish'}">${alertData.direction}</span>
+                                <span class="alert-time ms-auto">${timeString}</span>
+                            </div>
+                            <div class="alert-stats">
+                                <div class="alert-stat">
+                                    <span class="alert-stat-label">Price:</span> $${parseFloat(alertData.price).toFixed(4)}
+                                </div>
+                                <div class="alert-stat">
+                                    <span class="alert-stat-label">RSI:</span> ${alertData.rsi.toFixed(1)}
+                                </div>
+                                <div class="alert-stat">
+                                    <span class="alert-stat-label">Vol:</span> ${alertData.volume_ratio.toFixed(1)}x
+                                </div>
+                                <div class="alert-stat">
+                                    <span class="alert-stat-label">Conf:</span> ${alertData.confidence.toFixed(0)}%
+                                </div>
+                            </div>
+                            <div class="alert-time mt-1">
+                                ${dateString} • ${alertData.timeframe} timeframe
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add new alert at the top
+            alertsContainer.insertAdjacentHTML('afterbegin', alertHtml);
+            
+            // Limit to 10 alerts
+            const alerts = alertsContainer.querySelectorAll('.alert-item');
+            if (alerts.length > 10) {
+                alerts[alerts.length - 1].remove();
+            }
+            
+            // Update scroll controls
+            setTimeout(updateScrollControls, 100);
+        }
+
+        // Initialize page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load initial data
+            loadMarketMovers();
+            loadOpportunities();
+            loadAudioStatus();
+            loadCoinLimit();
+            startAutoRefresh();
+            
+            // Start alert polling
+            startAlertPolling();
+            
+            // Initialize scroll controls
+            updateScrollControls();
+            
+            // Add keyboard shortcuts for alert scrolling
+            document.addEventListener('keydown', function(e) {
+                // Only if alerts container is focused or no specific element is focused
+                if (e.target === document.body || e.target.closest('.alerts-scroll-container')) {
+                    if (e.key === 'ArrowUp' && e.ctrlKey) {
+                        e.preventDefault();
+                        scrollAlerts('up');
+                    } else if (e.key === 'ArrowDown' && e.ctrlKey) {
+                        e.preventDefault();
+                        scrollAlerts('down');
+                    }
+                }
+            });
+        });
     </script>
 </body>
 </html> 

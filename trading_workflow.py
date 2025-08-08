@@ -53,9 +53,8 @@ class TradingWorkflow:
             print("Running full market scan...")
             opportunities = self.scanner.scan_all_opportunities()
         else:
-            print("Running quick scan (top coins)...")
-            self.scanner.TOP_COINS = self.scanner.TOP_COINS[:10]
-            opportunities = self.scanner.scan_all_opportunities()
+            print("Running quick scan (top 50 coins)...")
+            opportunities = self.scanner.scan_all_opportunities(scan_type='curated_30')
         
         self.scanner.display_top_opportunities(opportunities)
         
@@ -96,7 +95,7 @@ class TradingWorkflow:
         # Get user preferences
         print("\nWorkflow Configuration:")
         print("1. Scan type:")
-        print("   1. Quick scan (top 15 coins)")
+        print("   1. Quick scan (top 50 coins)")
         print("   2. Full scan (all coins)")
         
         scan_choice = input("Choose scan type (1 or 2): ").strip()
