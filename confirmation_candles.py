@@ -7,6 +7,7 @@ Uses 1-2 confirmation candles to validate trend direction
 
 import pandas as pd
 import numpy as np
+import asyncio
 from datetime import datetime, timedelta
 import time
 import logging
@@ -45,15 +46,58 @@ class ConfirmationCandleSystem:
         self.symbol_signal_history = {}  # Track last signal time per symbol
         
     def get_confirmation_data(self, symbol):
-        """Fetch 5-minute candle data for confirmation"""
+        """Fetch 5-minute candle data for confirmation using the async exchange API"""
         try:
             if not self.exchange:
                 return None
-                
-            # Fetch recent 5-minute candles (need more for analysis)
-            ohlcv = self.exchange.fetch_ohlcv(symbol, self.confirmation_timeframe, limit=20)
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            
+            # Use the standardized async interface get_ohlcv() and run it synchronously here
+            async def _fetch():
+                try:
+                    return await self.exchange.get_ohlcv(symbol, self.confirmation_timeframe, limit=100)
+                except Exception as e:
+                    raise e
+            
+            ohlcv_data = asyncio.run(_fetch())
+            if not ohlcv_data:
+                return None
+            
+            # Convert standardized OHLCV objects to DataFrame
+            df_rows = []
+            for o in ohlcv_data:
+                # Support both dataclass objects and raw mappings if any adapter returns dicts
+                if hasattr(o, 'timestamp'):
+                    df_rows.append({
+                        'timestamp': pd.to_datetime(getattr(o, 'timestamp'), unit='ms'),
+                        'open': float(getattr(o, 'open')),
+                        'high': float(getattr(o, 'high')),
+                        'low': float(getattr(o, 'low')),
+                        'close': float(getattr(o, 'close')),
+                        'volume': float(getattr(o, 'volume')),
+                    })
+                elif isinstance(o, dict):
+                    df_rows.append({
+                        'timestamp': pd.to_datetime(int(o.get('timestamp', o.get('time', 0))), unit='ms'),
+                        'open': float(o.get('open', 0)),
+                        'high': float(o.get('high', 0)),
+                        'low': float(o.get('low', 0)),
+                        'close': float(o.get('close', 0)),
+                        'volume': float(o.get('volume', o.get('baseVol', o.get('quoteVol', 0)))),
+                    })
+                elif isinstance(o, (list, tuple)) and len(o) >= 6:
+                    df_rows.append({
+                        'timestamp': pd.to_datetime(int(o[0]), unit='ms'),
+                        'open': float(o[1]),
+                        'high': float(o[2]),
+                        'low': float(o[3]),
+                        'close': float(o[4]),
+                        'volume': float(o[5]),
+                    })
+            
+            if not df_rows:
+                return None
+            
+            df = pd.DataFrame(df_rows)
             
             # Calculate additional metrics
             df['body_size'] = abs(df['close'] - df['open'])

@@ -19,7 +19,8 @@ from plotly.subplots import make_subplots
 import sqlite3
 import threading
 import time
-import winsound  # For Windows audio alerts
+# Cross-platform audio handled via services.audio_service
+from services.audio_service import get_audio_player
 
 # Import new service architecture
 from config.service_factory import trading_system
@@ -913,6 +914,8 @@ class RealTimeAlertSystem:
             'BEARISH': 400   # Lower frequency for bearish
         }
         self.system_start_time = time.time()  # Track when system started
+        # Cross-platform audio player
+        self.audio = get_audio_player()
     
     def monitor_all_symbols(self):
         """Monitor all tracked symbols for crossover signals"""
@@ -1125,19 +1128,13 @@ class RealTimeAlertSystem:
                 signal['timestamp']
             )
             
-            # Play audio alert only if enabled
+            # Play audio alert only if enabled (cross-platform)
             if self.dashboard.audio_enabled:
                 frequency = self.alert_sounds.get(signal['direction'], 600)
                 duration = 500  # 500ms
-                
-                # Play alert sound (Windows)
-                try:
-                    winsound.Beep(frequency, duration)
-                    # Play second beep for emphasis
-                    time.sleep(0.1)
-                    winsound.Beep(frequency, duration)
-                except:
-                    print("🔊 Audio alert failed (winsound not available)")
+                self.audio.beep(frequency, duration)
+                time.sleep(0.1)
+                self.audio.beep(frequency, duration)
             else:
                 print("🔇 Audio alerts disabled")
             
@@ -1201,16 +1198,10 @@ class RealTimeAlertSystem:
             if self.dashboard.audio_enabled:
                 frequency = self.alert_sounds.get(signal['direction'], 600)
                 duration = 300  # Shorter duration for immediate alert
-                
                 print(f"🔊 IMMEDIATE AUDIO: Playing {frequency}Hz for {duration}ms")
-                try:
-                    import winsound
-                    winsound.Beep(frequency, duration)
-                    time.sleep(0.05)
-                    winsound.Beep(frequency, duration)
-                    print("🔊 Immediate audio alert played!")
-                except Exception as audio_error:
-                    print(f"🔊 Immediate audio failed: {audio_error}")
+                self.audio.beep(frequency, duration)
+                time.sleep(0.05)
+                self.audio.beep(frequency, duration)
             
             # Print signal detection
             direction_emoji = "📈" if signal['direction'] == 'LONG' else "📉"
@@ -1316,26 +1307,12 @@ class RealTimeAlertSystem:
                 duration = 500  # 500ms
                 
                 print(f"🔊 Playing {frequency}Hz for {duration}ms")
-                # Play alert sound (Windows) - FORCE PLAY
-                try:
-                    import winsound
-                    winsound.Beep(frequency, duration)
-                    # Play second beep for emphasis
-                    time.sleep(0.1)
-                    winsound.Beep(frequency, duration)
-                    # Play third beep for extra emphasis
-                    time.sleep(0.1)
-                    winsound.Beep(frequency, duration)
-                    print("🔊 Audio alert played successfully!")
-                except Exception as audio_error:
-                    print(f"🔊 Audio alert failed: {audio_error}")
-                    # Try alternative audio method
-                    try:
-                        import os
-                        os.system(f'echo ')  # Bell character
-                        print("🔊 Alternative audio method used")
-                    except:
-                        print("🔊 All audio methods failed")
+                # Cross-platform beeps using audio service
+                self.audio.beep(frequency, duration)
+                time.sleep(0.1)
+                self.audio.beep(frequency, duration)
+                time.sleep(0.1)
+                self.audio.beep(frequency, duration)
             else:
                 print("🔇 Audio alerts disabled")
             
