@@ -15,6 +15,17 @@ A comprehensive cryptocurrency trading system featuring professional-grade techn
 
 ## **🔧 INSTALLATION GUIDE**
 
+### Cross-platform quick start
+
+- macOS/Linux:
+  - `bash scripts/setup_and_run_unix.sh`
+- Windows (PowerShell):
+  - `powershell -ExecutionPolicy Bypass -File scripts/setup_and_run_windows.ps1`
+- Windows (CMD):
+  - `scripts\setup_and_run_windows.bat`
+
+These scripts create a `.venv`, install `requirements.txt`, and run `flask_dashboard.py`.
+
 ### **Step 1: Install Python (Required)**
 
 #### **Download Python:**
