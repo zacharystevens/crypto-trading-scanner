@@ -61,6 +61,8 @@ timeout /t 3 /nobreak >nul
 
 :: Start the Flask dashboard in a new window
 echo 🌐 Launching Trading Dashboard...
+echo 💡 Note: First run will ask to configure API or use demo mode
+echo 💡 Available flags: --demo, --api-binance, --api-bitunix, --config
 start "Trading Dashboard" cmd /k "python flask_dashboard.py"
 
 :: Wait a moment for the server to start

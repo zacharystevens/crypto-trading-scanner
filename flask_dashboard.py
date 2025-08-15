@@ -6,6 +6,9 @@ Features: Live charts, signal alerts, performance tracking, multi-timeframe sync
 """
 print("=== FLASK DASHBOARD FILE LOADED ===")
 
+import argparse
+import sys
+from pathlib import Path
 from flask import Flask, render_template, jsonify, request, send_from_directory
 import ccxt
 import pandas as pd
@@ -19,6 +22,7 @@ from plotly.subplots import make_subplots
 import sqlite3
 import threading
 import time
+from typing import Dict, Any
 # Cross-platform audio handled via services.audio_service
 from services.audio_service import get_audio_player
 
@@ -1337,8 +1341,11 @@ class RealTimeAlertSystem:
     
 
 
+
 # Initialize dashboard
 dashboard = TradingDashboard()
+
+
 
 # Flask Routes
 @app.route('/')
@@ -1826,9 +1833,189 @@ if __name__ == '__main__':
     print("   - Monitoring 100 coins for signals")
     print("   - Available timeframes: 5m, 15m, 30m, 1h, 4h")
     print("   - 1h is default for alerts, other timeframes for analysis")
+
+
+def parse_command_line_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Professional Crypto Trading Scanner Dashboard",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python flask_dashboard.py              # Normal startup (uses saved config or wizard)
+  python flask_dashboard.py --demo       # Force demo mode (override saved config)
+  python flask_dashboard.py --api-binance    # Force Binance API (needs env vars)
+  python flask_dashboard.py --api-bitunix    # Force Bitunix API (needs env vars)
+  python flask_dashboard.py --config     # Run configuration wizard
+  python flask_dashboard.py --help       # Show this help message
+
+The dashboard will automatically guide you through setup on first run.
+        """
+    )
+    
+    parser.add_argument(
+        '--demo',
+        action='store_true',
+        help='Force demo mode (override saved configuration)'
+    )
+    
+    parser.add_argument(
+        '--config',
+        action='store_true',
+        help='Run configuration wizard (reconfigure settings)'
+    )
+    
+    parser.add_argument(
+        '--api-binance',
+        action='store_true',
+        help='Force use of Binance API (requires API keys in environment)'
+    )
+    
+    parser.add_argument(
+        '--api-bitunix',
+        action='store_true',
+        help='Force use of Bitunix API (requires API keys in environment)'
+    )
+    
+    return parser.parse_args()
+
+
+def setup_configuration(force_demo=False, force_config=False, force_exchange=None):
+    """Setup configuration using wizard if needed."""
+    from config.setup_wizard import ConfigurationWizard
+    
+    wizard = ConfigurationWizard()
+    
+    # Force demo mode if requested
+    if force_demo:
+        print("🎭 DEMO MODE REQUESTED")
+        print("Using simulated data for this session...")
+        
+        # Create temporary demo config
+        demo_config = {'mode': 'demo'}
+        wizard.create_env_file(demo_config)
+        return demo_config
+    
+    # Force specific exchange if requested
+    if force_exchange:
+        print(f"🔗 {force_exchange.upper()} API REQUESTED")
+        print(f"Attempting to use {force_exchange} with environment credentials...")
+        
+        # Check for required environment variables
+        api_key_env = f'TRADING_{force_exchange.upper()}_API_KEY'
+        secret_key_env = f'TRADING_{force_exchange.upper()}_SECRET_KEY'
+        
+        api_key = os.getenv(api_key_env)
+        secret_key = os.getenv(secret_key_env)
+        
+        if not api_key or not secret_key:
+            print(f"❌ Missing required environment variables:")
+            print(f"   {api_key_env}={api_key if api_key else 'NOT SET'}")
+            print(f"   {secret_key_env}={'SET' if secret_key else 'NOT SET'}")
+            print(f"\n💡 Please set these environment variables or run without --api-{force_exchange}")
+            print("   Example:")
+            print(f"   export {api_key_env}=your_api_key")
+            print(f"   export {secret_key_env}=your_secret_key")
+            sys.exit(1)
+        
+        # Create forced exchange config
+        forced_config = {
+            'mode': 'live',
+            'exchange': force_exchange,
+            'api_key': api_key,
+            'secret_key': secret_key,
+            'source': 'forced_exchange'
+        }
+        
+        print(f"✅ Found {force_exchange} credentials in environment")
+        print(f"   API Key: {api_key[:8]}...{api_key[-4:]}")
+        print("   Secret Key: ***configured***")
+        
+        return forced_config
+    
+    # Force reconfiguration if requested
+    if force_config or not wizard.has_existing_config():
+        print("🔧 CONFIGURATION SETUP")
+        if not wizard.has_existing_config():
+            print("No configuration found - running setup wizard...")
+        else:
+            print("Reconfiguration requested...")
+        
+        return wizard.run_wizard()
+    
+    # Load existing configuration
+    existing_config = wizard.load_existing_config()
+    if existing_config:
+        mode_name = "Demo Mode" if existing_config.get('mode') == 'demo' else "Live Data Mode"
+        print(f"✅ Using saved configuration: {mode_name}")
+        return existing_config
+    
+    # Fallback to wizard
+    print("⚠️  Configuration file found but invalid - running setup wizard...")
+    return wizard.run_wizard()
+
+
+if __name__ == "__main__":
+    # Parse command line arguments
+    args = parse_command_line_args()
+    
+    # Validate mutually exclusive flags
+    exclusive_flags = [args.demo, args.api_binance, args.api_bitunix]
+    if sum(exclusive_flags) > 1:
+        print("❌ ERROR: Cannot use multiple mode flags simultaneously")
+        print("   Choose only one: --demo, --api-binance, or --api-bitunix")
+        sys.exit(1)
+    
+    # Determine forced exchange if any
+    force_exchange = None
+    if args.api_binance:
+        force_exchange = 'binance'
+    elif args.api_bitunix:
+        force_exchange = 'bitunix'
+    
+    # Setup configuration
+    try:
+        config = setup_configuration(
+            force_demo=args.demo,
+            force_config=args.config,
+            force_exchange=force_exchange
+        )
+        
+        print(f"\n🚀 Starting dashboard...")
+        if config.get('mode') == 'demo':
+            print("📊 Mode: Demo (simulated data)")
+        else:
+            exchange_name = config.get('exchange', 'unknown').title()
+            print(f"📊 Mode: Live Data ({exchange_name})")
+        
+    except KeyboardInterrupt:
+        print("\n❌ Setup cancelled by user")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n❌ Configuration error: {e}")
+        print("Falling back to demo mode...")
+        
+        # Create emergency demo config
+        from config.setup_wizard import ConfigurationWizard
+        wizard = ConfigurationWizard()
+        demo_config = {'mode': 'demo'}
+        wizard.create_env_file(demo_config)
+    
+    # Start Flask application
     from config.settings import settings
-    app.run(
-        host=settings.flask_host, 
-        port=settings.flask_port, 
-        debug=settings.flask_debug
-    ) 
+    print(f"\n🌐 Dashboard starting at: http://{settings.flask_host}:{settings.flask_port}")
+    print("📱 Open the above URL in your browser")
+    print("🔊 Audio alerts are enabled by default")
+    print("⚠️  Press Ctrl+C to stop the server")
+    
+    try:
+        app.run(
+            host=settings.flask_host, 
+            port=settings.flask_port, 
+            debug=settings.flask_debug
+        )
+    except KeyboardInterrupt:
+        print("\n👋 Dashboard stopped by user")
+    except Exception as e:
+        print(f"\n❌ Dashboard error: {e}")
+        sys.exit(1) 

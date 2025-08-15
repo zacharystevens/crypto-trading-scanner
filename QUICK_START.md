@@ -1,14 +1,34 @@
 # 🚀 Quick Start Guide - Multi-Exchange Trading System
 
-Get up and running with live Bitunix or Binance data in under 5 minutes!
+Get up and running in under 5 minutes! Choose demo mode (no setup) or live data mode.
 
 ## 📋 **Prerequisites**
 
 - Python 3.8+ installed
 - Internet connection
+
+**Optional for Live Data:**
 - Bitunix or Binance account with API access
 
-## 🔧 **Step 1: Authentication Setup**
+**Note**: The system runs in demo mode by default - no API keys required to start!
+
+## 🚀 **Demo Mode (No Setup Required)**
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Launch dashboard immediately
+python flask_dashboard.py
+
+# Open browser to: http://localhost:5001
+```
+
+✅ **That's it!** The system runs with simulated data - perfect for learning and testing.
+
+---
+
+## 🔧 **Live Data Mode (Optional API Setup)**
 
 ### **Option A: Bitunix (Recommended)**
 
@@ -31,6 +51,8 @@ Get up and running with live Bitunix or Binance data in under 5 minutes!
    TRADING_MAX_PRICE=150000
    ```
 
+   📚 **For complete environment setup guide, see [ENVIRONMENT_SETUP_GUIDE.md](ENVIRONMENT_SETUP_GUIDE.md)**
+
 ### **Option B: Binance (Legacy)**
 
 1. **Get API Credentials:**
@@ -51,6 +73,8 @@ Get up and running with live Bitunix or Binance data in under 5 minutes!
    TRADING_MIN_PRICE=0.0001
    TRADING_MAX_PRICE=150000
    ```
+
+   📚 **For complete environment setup guide, see [ENVIRONMENT_SETUP_GUIDE.md](ENVIRONMENT_SETUP_GUIDE.md)**
 
 ## 📦 **Step 2: Installation**
 
