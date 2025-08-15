@@ -17,12 +17,14 @@ A comprehensive cryptocurrency trading system featuring professional-grade techn
 
 ### Cross-platform quick start
 
-- macOS/Linux:
-  - `bash scripts/setup_and_run_unix.sh`
-- Windows (PowerShell):
-  - `powershell -ExecutionPolicy Bypass -File scripts/setup_and_run_windows.ps1`
-- Windows (CMD):
-  - `scripts\setup_and_run_windows.bat`
+**EASY OPTION - Demo Mode (No API Keys Required):**
+- Windows: Double-click `LAUNCH_DASHBOARD.bat`
+- macOS/Linux: `bash scripts/setup_and_run_unix.sh`
+- All platforms: `python flask_dashboard.py` (after installing requirements)
+
+**ADVANCED - With Live Data:**
+- Configure `.env` file with Bitunix/Binance API keys
+- Run the same commands above for live market data
 
 These scripts create a `.venv`, install `requirements.txt`, and run `flask_dashboard.py`.
 
@@ -204,6 +206,12 @@ After installation, you should have:
 - 🔐 **Secure Authentication** - API keys via environment variables
 - ⚙️ **Flexible Settings** - Easy customization of all parameters
 - 📝 **Comprehensive Logging** - Detailed system monitoring
+
+### **Audio Alert System**
+- 🔊 **Cross-Platform Audio** - Works on Windows, macOS, and Linux
+- 🎵 **Smart Beeping** - Different tones for bullish/bearish signals
+- 🔧 **Fallback Support** - Graceful degradation when audio unavailable
+- ⚡ **Real-Time Alerts** - Immediate audio feedback on signal detection
 
 # 📚 **COMPLETE INSTALLATION & USAGE MANUAL**
 
@@ -614,9 +622,20 @@ LAUNCH_DASHBOARD.bat
 
 ### **🚀 One-Click Launch**
 1. **Double-click** `LAUNCH_DASHBOARD.bat`
-2. **Wait** for system to start
-3. **Browser opens** automatically
-4. **Monitor** CMD window for alerts
+2. **Follow configuration wizard** (first run only)
+3. **Wait** for system to start
+4. **Browser opens** automatically
+5. **Monitor** CMD window for alerts
+
+### **⚙️ Configuration Options**
+- **First Run**: Interactive wizard guides you through setup
+- **Demo Mode**: `python flask_dashboard.py --demo` (no API keys needed)
+- **Force Binance**: `python flask_dashboard.py --api-binance` (uses env vars)
+- **Force Bitunix**: `python flask_dashboard.py --api-bitunix` (uses env vars)
+- **Reconfigure**: `python flask_dashboard.py --config`
+- **Normal Mode**: Uses saved configuration or runs wizard
+
+💡 **For seamless startup without repetitive configuration, see [Environment Setup Guide](ENVIRONMENT_SETUP_GUIDE.md)**
 
 ### **🔊 Audio Controls**
 - **Toggle**: Use API endpoint `/api/audio/toggle`
@@ -651,17 +670,29 @@ LAUNCH_DASHBOARD.bat
 |----------|--------|----------|----------------|
 | **Bitunix** | ✅ Primary | Full API, Live Data, 450+ Pairs | API Key + Secret |
 | **Binance** | ✅ Legacy | CCXT Integration, Backup | API Key + Secret |
+| **Demo Mode** | ✅ Default | Simulated Data, No Setup Required | None |
 
-### **Switching Exchanges**
+### **Operating Modes**
 
-Simply change the `TRADING_EXCHANGE_TYPE` in your `.env` file:
+The system operates in different modes based on configuration:
 
+**Demo Mode (Default - No .env file needed):**
+```bash
+# No configuration required - runs automatically with demo data
+python flask_dashboard.py
+```
+
+**Live Data Mode (Requires API keys in .env file):**
 ```bash
 # Use Bitunix (Recommended)
 TRADING_EXCHANGE_TYPE=bitunix
+TRADING_BITUNIX_API_KEY=your_api_key
+TRADING_BITUNIX_SECRET_KEY=your_secret_key
 
 # Use Binance (Legacy)
 TRADING_EXCHANGE_TYPE=binance
+TRADING_BINANCE_API_KEY=your_api_key
+TRADING_BINANCE_SECRET_KEY=your_secret_key
 ```
 
 ### **Exchange-Specific Features**
@@ -768,7 +799,7 @@ print(f"Score: {analysis['score']}, Signal: {analysis.get('signal_class')}")
 
 - 📖 [Quick Start Guide](QUICK_START.md) - Get up and running in 5 minutes
 - 🌐 [Web Dashboard Guide](WEB_DASHBOARD_GUIDE.md) - Dashboard features and usage
-- 🔄 [Bitunix Migration Guide](../BITUNIX_MIGRATION_GUIDE.md) - Detailed migration instructions
+- 🎭 [Demo Scripts Guide](DEMO_SCRIPTS_GUIDE.md) - All demo scripts explained
 - ⚙️ [Configuration Reference](config/settings.py) - All available settings
 
 ## 🛠️ **Development**

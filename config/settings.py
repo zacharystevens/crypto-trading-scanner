@@ -178,6 +178,8 @@ class TradingSettings(BaseSettings):
         description="Exchange to use (binance, bitunix)"
     )
     
+
+    
     # Bitunix API Configuration
     bitunix_api_key: str = Field(
         default="", 
@@ -450,6 +452,7 @@ class TradingSettings(BaseSettings):
                 'timeout': self.api_timeout,
                 'enable_rate_limit': self.enable_rate_limit
             }
+
         else:
             raise ValueError(f"Unknown exchange type: {self.exchange_type}")
 

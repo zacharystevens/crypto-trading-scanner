@@ -29,6 +29,12 @@ echo "[setup] Installing requirements"
 pip install -r requirements.txt
 
 echo "[run] Starting Flask dashboard on http://localhost:5001"
+echo "[info] First run will ask to configure API or use demo mode"
+echo "[tip] Available flags:"
+echo "      --demo (force demo mode)"
+echo "      --api-binance (force Binance API)"
+echo "      --api-bitunix (force Bitunix API)"
+echo "      --config (reconfigure)"
 exec python flask_dashboard.py
 
 

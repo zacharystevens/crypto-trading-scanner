@@ -7,7 +7,7 @@ The **Opportunity Scanner Dashboard** is a professional-grade web interface for 
 
 ### 1. Launch the Dashboard
 ```bash
-cd tcss-trading-system
+cd crypto-trading-scanner
 python flask_dashboard.py
 ```
 
@@ -19,309 +19,278 @@ The dashboard will automatically start loading market data and scanning for oppo
 ## 📱 Dashboard Overview
 
 ### Header Navigation
+- **Dashboard Title**: 🔍 Opportunity Scanner Dashboard with search icon
 - **Current Time**: Live timestamp updated every second
+- **Audio Toggle**: Toggle audio alerts ON/OFF with volume icon
 - **Refresh Button**: Manual data refresh for all sections
-- **Dashboard Title**: Shows active status with 🔍 icon
 
 ### Main Layout
-The dashboard is organized into 4 main sections:
-1. **Search Bar** (top center)
-2. **Market Movers** (left side)
-3. **Trading Opportunities** (center)
-4. **Scanner Controls & Charts** (right side)
+The dashboard is organized into 3 main sections:
+1. **Search Bar & Scanner Controls** (top center)
+2. **Market Movers** (left side - 5 columns wide)
+3. **Trading Opportunities & Charts** (right side - 7 columns wide)
 
 ## 🔍 Features & Functionality
 
-### 1. Coin Search
-**Location**: Top center search bar
+### 1. Coin Search & Scanner Controls
+**Location**: Top center section
 
-**Usage**:
+**Search Features**:
 - Enter any cryptocurrency symbol (BTC, ETH, DOGE, etc.)
-- Press Enter or click the search button
+- Autocomplete dropdown with available symbols
 - Automatically adds /USDT suffix if not present
 - Displays detailed technical analysis for the searched coin
+
+**Scanner Controls**:
+- **Curated Analysis**: Quick analysis of top 30 coins
+- **Extended Analysis**: Comprehensive analysis of 400+ coins
+- **Live counters**: Shows analysis progress and counts
 
 **Supported Formats**:
 - `BTC` → `BTC/USDT`
 - `ETH` → `ETH/USDT`
 - `BTC/USDT` → Direct search
 
-### 2. Top Gainers Section
-**Location**: Left side, green card
+### 2. Market Movers Section
+**Location**: Left side (5-column wide section)
 
-**Features**:
-- Shows top 5 gaining cryptocurrencies in 24h
+**Contains Three Cards**:
+
+#### **Top Gainers** (Green card)
+- Shows top gainers in 24h period
 - Real-time price updates
 - 24h percentage change (green for gains)
 - Trading volume in abbreviated format (M/B)
 - Click any gainer to load its chart analysis
 
-**Data Fields**:
+#### **Top Losers** (Red card)  
+- Shows top losing cryptocurrencies in 24h
+- Real-time price updates
+- 24h percentage change (red for losses)
+- Trading volume data
+
+#### **Top Market Cap** (Blue card)
+- Shows highest market cap cryptocurrencies
+- Market capitalization data
+- Current prices and changes
+
+**Data Fields for Each**:
 - Symbol (without /USDT suffix)
 - Current price
 - 24h change percentage
 - 24h trading volume
 
-### 3. Top Losers Section
-**Location**: Left side, red card
+### 3. Trading Opportunities & Analysis Section
+**Location**: Right side (7-column wide section)
+
+**Contains**:
+
+#### **Trading Opportunities** (Main card)
+- Real-time trading opportunities detected by AI
+- Scoring system (0-100) for each opportunity
+- Signal direction (BULLISH/BEARISH) with color coding
+- Timeframe indicators showing multi-timeframe confluence
+- Confidence levels and entry suggestions
+- Click any opportunity to load detailed chart analysis
+
+#### **Recent Alerts** (Alert feed)
+- Live feed of detected trading signals
+- Audio alert integration with visual notifications
+- Historical alert tracking
+- Alert cooldown system to prevent spam
+
+#### **Interactive Charts** (Chart area)
+- Full-featured Plotly charts with technical indicators
+- Multiple timeframe selection (5m, 15m, 30m, 1h, 4h)
+- Zoom, pan, and interactive analysis tools
+- Technical indicators: EMA, SMA, RSI, Volume, FVG zones
+
+## 🔊 Audio Alert System
+
+### Audio Controls
+**Location**: Top navigation bar (volume icon button)
 
 **Features**:
-- Shows top 5 losing cryptocurrencies in 24h
-- Real-time price updates
-- 24h percentage change (red for losses)
-- Trading volume in abbreviated format
-- Click any loser to load its chart analysis
+- **Toggle Button**: Click volume icon to turn audio ON/OFF
+- **Visual Status**: Shows "ON" or "OFF" status next to volume icon
+- **Real-time Control**: Immediately enables/disables audio alerts
 
-### 4. Best Trading Opportunities
-**Location**: Center, main focus area
+### Audio Alert Types
+- **Bullish Signals**: High-pitched beep (800Hz)
+- **Bearish Signals**: Low-pitched beep (400Hz)  
+- **Duration**: 3 distinct beeps for emphasis
+- **Cross-Platform**: Works on Windows, macOS, and Linux
 
-**Purpose**: Displays the most promising trading setups identified by the opportunity scanner
+### Audio Behavior
+- **Default State**: Audio alerts are ON when dashboard loads
+- **Cooldown**: 10-minute cooldown between alerts for same symbol
+- **Fallback**: Graceful degradation if audio hardware unavailable
+- **Console Backup**: Alternative bell character if main audio fails
 
-**Opportunity Cards Include**:
-- **Symbol**: Cryptocurrency pair
-- **Score**: Numerical rating (0-100+)
-- **Signal Class**: WEAK, MODERATE, STRONG
-- **Direction**: BULLISH, BEARISH, NEUTRAL
-- **Current Price**: Live market price
-- **Timeframe**: Primary analysis timeframe
+## 📊 Chart Navigation
 
-**Score Color Coding**:
-- 🟢 **High (50+)**: Strong opportunities, high confidence
-- 🟡 **Medium (30-49)**: Moderate opportunities, decent confidence  
-- 🔴 **Low (<30)**: Weak opportunities, low confidence
+### Timeframe Selection
+- **5m**: Ultra short-term analysis
+- **15m**: Short-term analysis
+- **30m**: Short-medium term analysis
+- **1h**: Medium-term analysis (default)
+- **4h**: Long-term analysis
 
-**Signal Classifications**:
-- **STRONG**: High confluence across multiple indicators
-- **MODERATE**: Some technical alignment
-- **WEAK**: Limited technical support
+### Chart Controls
+- **Zoom**: Mouse wheel or zoom buttons
+- **Pan**: Click and drag to move chart
+- **Reset**: Double-click to reset view
+- **Fullscreen**: Expand chart to full window
 
-### 5. Scanner Controls
-**Location**: Right side, top
+### Technical Indicators Legend
+```
+🟠 EMA20 (Orange) - Short-term trend
+🔵 EMA50 (Blue) - Medium-term trend
+🟡 SMA20 (Yellow Dash) - Short-term support/resistance
+🟣 SMA50 (Purple Dash) - Medium-term support/resistance
+🟢 Volume SMA (Green) - Volume trend
+📊 RSI (Separate panel) - Momentum indicator
+🔳 FVG Zones (Transparent boxes) - Fair Value Gaps
+```
 
-**Controls Available**:
-- **🔍 Run Full Scan**: Analyzes all configured cryptocurrencies
-- **🔥 Scan Market Movers**: Focuses on trending coins
-- **📥 Export Results**: Download opportunities data (coming soon)
+## ⏰ Update Frequencies
 
-### 6. Scanner Stats
-**Location**: Right side, middle
+### 🔄 Real-time Updates
+- **Market Data**: Every 30 seconds
+- **Price Charts**: Every 30 seconds
+- **Volume Data**: Every 30 seconds
+- **Top Movers**: Every 30 seconds
 
-**Metrics Displayed**:
-- **Opportunities Found**: Number of trading setups detected
-- **Coins Scanned**: Total cryptocurrencies analyzed
-- **Last Scan**: Timestamp of most recent analysis
+### 🚨 Alert Monitoring
+- **Signal Detection**: Every 30 seconds
+- **Top 100+ Coins**: Monitored continuously
+- **Market Movers**: Top gainers + losers + market cap
+- **Background Processing**: Non-stop monitoring
 
-### 7. Chart Analysis
-**Location**: Right side, bottom
+### 📊 Data Caching
+- **Chart Data**: Cached for 15 minutes
+- **Market Movers**: Cached for 15 minutes
+- **Technical Analysis**: Calculated in real-time
+- **Alert History**: Stored in database
 
-**Features**:
-- **Interactive Plotly Charts**: Professional trading charts
-- **Multiple Timeframes**: 15m, 1h, 4h analysis
-- **Technical Indicators**: 
-  - Candlestick patterns
-  - EMA 20/50 moving averages
-  - Volume analysis
-  - RSI indicator
-- **Click-to-Analyze**: Select any coin from gainers/losers/opportunities
+## 🎯 Operating Modes
 
-## 🎯 Technical Analysis Engine
+### Demo Mode (Default)
+- **No Setup Required**: Works immediately after installation
+- **Simulated Data**: Uses realistic demo data for testing
+- **Full Functionality**: All features work with demo data
+- **Perfect for Learning**: Test features without API keys
 
-### Multi-Timeframe Analysis
-The scanner analyzes each cryptocurrency across multiple timeframes:
-- **15 minutes**: Short-term momentum and precision entries
-- **1 hour**: Medium-term trends (primary timeframe)  
-- **4 hours**: Medium-term direction
-- **1 day**: Long-term trend analysis
+### Live Data Mode (Optional)
+- **API Keys Required**: Bitunix or Binance credentials needed
+- **Real Market Data**: Live prices, volumes, and changes
+- **Professional Trading**: Real-time opportunities
+- **Production Ready**: For actual trading analysis
 
-### Fair Value Gaps (FVG)
-- Detects price imbalances in the market
-- Identifies unfilled gaps that may act as support/resistance
-- Measures gap strength and proximity to current price
+## 🛠️ Troubleshooting
 
-### Confluence Analysis
-- Combines signals from multiple timeframes
-- Calculates agreement percentage between timeframes
-- Identifies strong vs. conflicting signals
+### Common Issues
 
-### Pattern Recognition
-- **Head & Shoulders**: Reversal pattern detection
-- **Double/Triple Tops/Bottoms**: Key reversal levels
-- **Flags & Pennants**: Continuation patterns
-- **Trendline Breaks**: Support/resistance violations
+#### **Dashboard not loading**
+1. Check if Flask server is running in terminal
+2. Verify URL: `http://localhost:5001`
+3. Clear browser cache and refresh
+4. Try different browser
 
-### Volume Analysis
-- Volume spike detection
-- Volume-price relationship analysis
-- Above/below average volume confirmation
+#### **Charts not displaying**
+1. Check internet connection (for chart libraries)
+2. Refresh page (Ctrl+F5 or Cmd+Shift+R)
+3. Clear browser cache
+4. Check browser console for JavaScript errors
 
-## 📊 Understanding the Data
+#### **No data showing**
+1. Wait 30 seconds for initial data load
+2. Check terminal for error messages
+3. Verify exchange connection status
+4. Try demo mode if live data fails
 
-### Opportunity Scores
-Scores are calculated using a 100-point system with these components:
-- **FVG Analysis**: 0-22 points (unfilled gaps near price get higher scores)
-- **Pattern Recognition**: 0-22 points (clean breakouts, confirmed patterns)
-- **Multi-Timeframe Confluence**: 0-18 points (agreement across timeframes)
-- **Trendline Analysis**: 0-18 points (support/resistance break confirmations)
-- **Volume Analysis**: 0-12 points (above-average volume confirmation)
-- **Momentum Indicators**: 0-8 points (short-term directional strength)
+#### **Audio not working**
+1. Check system volume and audio output
+2. Verify audio toggle is ON in dashboard
+3. Test with different browser
+4. Check browser audio permissions
 
-### Signal Directions
-- **BULLISH**: Upward price movement expected
-- **BEARISH**: Downward price movement expected  
-- **NEUTRAL**: Sideways/uncertain movement
+### Performance Tips
+- **Close unused browser tabs** to improve performance
+- **Use latest browser version** for best compatibility
+- **Enable hardware acceleration** in browser settings
+- **Monitor system resources** if dashboard seems slow
 
-### Confidence Levels
-Based on multi-timeframe agreement (4 timeframes: 15m, 1h, 4h, 1d):
-- **4/4 Agreement**: STRONG signal (80%+ confluence)
-- **3/4 Agreement**: MODERATE signal (60-79% confluence)
-- **2/4 Agreement**: WEAK signal (<60% confluence)
+## 📚 API Endpoints
 
-### Timeframe Weights
-- **Daily (1d)**: 35% weight (long-term trend)
-- **4-Hour (4h)**: 30% weight (medium-term direction)  
-- **1-Hour (1h)**: 25% weight (primary analysis timeframe)
-- **15-Minute (15m)**: 10% weight (entry precision)
+The dashboard exposes several API endpoints for integration:
 
-## ⚙️ Auto-Refresh System
+- **GET** `/api/market_movers` - Top gainers/losers data
+- **GET** `/api/opportunities` - Current trading opportunities
+- **GET** `/api/top_market_cap` - Market cap leaders
+- **GET** `/api/alerts/latest` - Recent trading alerts
+- **GET** `/api/chart/{symbol}/{timeframe}` - Chart data
+- **POST** `/api/audio/toggle` - Toggle audio alerts
+- **GET** `/api/audio/status` - Check audio status
 
-### Automatic Updates
-- **Market data**: Refreshes every 30 seconds
-- **Time display**: Updates every second
-- **Opportunity scanning**: Triggered by user actions
+## 🎨 UI Features
 
-### Manual Refresh Options
-- **Header Refresh Button**: Updates all sections
-- **Individual Section Clicks**: Refresh specific data
-- **Scanner Controls**: Trigger new analysis
+### Dark Theme
+- **Professional appearance** with dark color scheme
+- **Reduced eye strain** for extended analysis sessions
+- **High contrast** for clear data visibility
+- **Modern design** with smooth animations
 
-## 🚨 Error Handling
+### Responsive Design
+- **Mobile friendly** layout that adapts to screen size
+- **Grid system** that reorganizes on smaller screens
+- **Touch-friendly** controls for tablet use
+- **Scalable elements** for different resolutions
 
-### Common Issues & Solutions
+### Interactive Elements
+- **Hover effects** on clickable items
+- **Loading animations** during data updates
+- **Toast notifications** for user feedback
+- **Modal dialogs** for detailed views
 
-**"Failed to load gainers/losers"**:
-- Check internet connection
-- Verify Binance API access
-- Disable VPN if restricted location error
+## 🔧 Customization
 
-**"Failed to load opportunities"**:
-- Ensure opportunity scanner is running
-- Check for sufficient market data
-- Verify API endpoints are responding
+### Browser Settings
+```javascript
+// Disable auto-refresh (in browser console)
+clearInterval(refreshInterval);
 
-**Charts not loading**:
-- Ensure Plotly library is accessible
-- Check browser console for errors
-- Try refreshing the page
+// Enable debug mode
+localStorage.setItem('debug', 'true');
 
-## 📈 Best Practices
+// Set custom refresh rate (in milliseconds)
+localStorage.setItem('refreshRate', '60000'); // 1 minute
+```
 
-### Using the Dashboard Effectively
+### URL Parameters
+- `?symbol=BTC` - Load specific symbol on start
+- `?timeframe=4h` - Set default timeframe
+- `?audio=off` - Start with audio disabled
 
-1. **Start with Market Overview**:
-   - Check top gainers/losers for market sentiment
-   - Look for unusual volume or price movements
+## 📖 Getting Help
 
-2. **Analyze Opportunities**:
-   - Focus on STRONG signals with scores >50
-   - Prefer opportunities with BULLISH/BEARISH clarity over NEUTRAL
-   - Check multiple timeframe agreement
+### Debug Information
+1. **Open browser console** (F12)
+2. **Check for JavaScript errors** (red messages)
+3. **Monitor network requests** (Network tab)
+4. **Check local storage** (Application tab)
 
-3. **Verify with Charts**:
-   - Click on interesting opportunities to view charts
-   - Look for confluence between indicators
-   - Check volume confirmation
-
-4. **Regular Monitoring**:
-   - Use auto-refresh for live monitoring
-   - Run full scans periodically for new opportunities
-   - Export results for record keeping
-
-### Risk Management
-- **Never rely solely on automated signals**
-- **Always confirm with additional analysis**
-- **Use proper position sizing**
-- **Set stop-losses based on technical levels**
-- **Consider market conditions and news events**
-
-## 🔧 Technical Specifications
-
-### System Requirements
-- **Python 3.7+**
-- **Flask web framework**
-- **Real-time API connections**
-- **Modern web browser**
-
-### API Endpoints
-- `/api/market_movers`: Top gainers and losers
-- `/api/opportunities`: Trading opportunity results  
-- `/api/chart/{symbol}/{timeframe}`: Chart data
-- `/api/search_coin/{symbol}`: Individual coin analysis
-
-### Data Sources
-- **Binance API**: Real-time market data
-- **Technical Analysis**: Custom algorithms
-- **Volume Data**: 24-hour trading volumes
-- **Price History**: 100-candle lookback
-
-## 🎛️ Customization Options
-
-### Modifying Scanner Settings
-Edit `opportunity_scanner.py` for:
-- Minimum volume thresholds
-- Score calculation weights
-- Pattern detection sensitivity
-- Timeframe combinations
-
-### UI Modifications
-Edit `templates/dashboard.html` for:
-- Color schemes and styling
-- Layout adjustments
-- Additional data fields
-- Custom indicators
-
-## 📝 Troubleshooting
-
-### Performance Issues
-- Reduce number of coins scanned
-- Increase refresh intervals
-- Check system resources
-
-### Data Quality Issues  
-- Verify API key permissions
-- Check network connectivity
-- Monitor rate limiting
-
-### Display Problems
-- Clear browser cache
-- Check JavaScript console
-- Verify all dependencies loaded
-
-## 🚀 Advanced Usage
-
-### Integration Possibilities
-- **Webhook Alerts**: Connect to Discord/Telegram
-- **Database Logging**: Store results for backtesting
-- **API Integration**: Connect to trading platforms
-- **Custom Indicators**: Add proprietary analysis
-
-### Performance Optimization
-- **Caching**: Reduce API calls
-- **Async Processing**: Parallel analysis
-- **Load Balancing**: Multiple scanner instances
-
-## 📞 Support & Development
-
-### Getting Help
-- Check the console logs for error messages
-- Verify all dependencies are installed
-- Ensure proper API access and permissions
-
-### Contributing
-- Fork the repository
-- Submit pull requests for improvements
-- Report bugs and feature requests
-- Share configuration optimizations
+### Log Analysis
+1. **Terminal output** shows server-side logs
+2. **Exchange connection status** is logged
+3. **API request/response** information available
+4. **Error messages** provide debugging context
 
 ---
 
-**⚠️ Disclaimer**: This dashboard is for educational and analysis purposes. Always perform your own research and risk assessment before making trading decisions. Past performance does not guarantee future results. 
+**🎉 You're now ready to use the Professional Trading Dashboard!**
+
+For additional help, see:
+- [Quick Start Guide](QUICK_START.md)
+- [Demo Scripts Guide](DEMO_SCRIPTS_GUIDE.md)
+- [Main README](README.md)
